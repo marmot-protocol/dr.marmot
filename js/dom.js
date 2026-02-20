@@ -1,0 +1,10 @@
+export const npubInput = document.getElementById('npub-input');
+export const auditBtn = document.getElementById('audit-btn');
+export const dialogText = document.getElementById('dialog-text');
+export const dialogArrow = document.getElementById('dialog-arrow');
+export const dialogHint = document.getElementById('dialog-hint');
+export const relayList = document.getElementById('relay-list');
+export const sprite = document.getElementById('doctor-sprite');
+export const gameWrap = document.getElementById('game-wrap');
+export const dialogBox = document.getElementById('dialog-box');
+export const starfieldCanvas = document.getElementById('starfield');

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Marmot — Nostr Profile Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="screen-viewport">
+        <div id="scanlines"></div>
+        <canvas id="starfield"></canvas>
+
+        <div id="game-wrap">
+            <div id="top-bar">
+                <span class="title-pixel">✦ DR. MARMOT ✦</span>
+                <span class="subtitle-pixel">NOSTR PROFILE AUDITOR v1.0</span>
+            </div>
+            <div id="main-area">
+                <div id="sprite-panel">
+                    <div id="sprite-scene">
+                        <div id="doctor-sprite" data-state="idle"></div>
+                    </div>
+                    <div id="sprite-label">DR. MARMOT</div>
+                </div>
+                <div id="status-panel">
+                    <div id="status-panel-title">◈ RELAY STATUS</div>
+                    <div id="relay-list">
+                        <div class="relay-idle">Awaiting investigation...</div>
+                    </div>
+                    <div id="dialog-box">
+                        <div id="dialog-name-tag">
+                            <span id="dialog-portrait">🦫</span>
+                            <span id="dialog-speaker">Dr. Marmot</span>
+                        </div>
+                        <div id="dialog-text"></div>
+                        <div id="dialog-arrow" class="hidden">▼</div>
+                        <div id="dialog-hint" class="hidden">[ CLICK TO CONTINUE ]</div>
+                    </div>
+                </div>
+
+            </div>
+            <div id="bottom-area">
+                <div id="input-row">
+                    <label for="npub-input">▶ ENTER NPUB</label>
+                    <div class="input-inner">
+                        <input type="text" id="npub-input" placeholder="npub1..." spellcheck="false" autocomplete="off"
+                            maxlength="120">
+                        <button id="audit-btn"><span>EXAMINE</span></button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
