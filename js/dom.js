@@ -1,4 +1,5 @@
 export const npubInput = document.getElementById('npub-input');
+export const nip07Btn = document.getElementById('nip07-btn');
 export const auditBtn = document.getElementById('audit-btn');
 export const dialogText = document.getElementById('dialog-text');
 export const dialogArrow = document.getElementById('dialog-arrow');

@@ -27,7 +27,7 @@
 
     --topbar-h: 5.5ch;
     --input-h: 6.5ch;
-    --bottom-h: 9ch;
+    --bottom-h: 12ch;
     --main-h: 81.5ch;
     /* 768 - topbar - bottom */
 
@@ -766,8 +766,8 @@ body {
     align-items: center;
     gap: 1.75ch;
     background: linear-gradient(90deg, #08083a, #0c0c22);
-    border-bottom: 0.375ch solid var(--c-border);
     padding: 1.25ch 2.25ch;
+    border-bottom: 0.375ch solid var(--c-border);
 }
 
 #input-row label {
@@ -804,6 +804,46 @@ body {
 #npub-input:focus {
     border-color: var(--c-border2);
     box-shadow: 0 0 1.25ch rgba(160, 160, 255, 0.25);
+}
+
+#signer-box {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1ch;
+    padding: 0.5ch 2.25ch;
+    background: linear-gradient(90deg, #060628, #0a0a1a);
+    border-top: 0.375ch solid var(--c-border);
+}
+
+#nip07-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.875ch;
+    padding: 0.625ch 1.25ch;
+    background: linear-gradient(180deg, #2a4a2a, #0a2a0a);
+    color: var(--c-green);
+    border: 0.375ch solid var(--c-border);
+    cursor: pointer;
+    letter-spacing: 0.05ch;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+#nip07-btn:hover {
+    background: linear-gradient(180deg, #3a5a3a, #1a3a1a);
+    color: var(--c-yellow);
+}
+
+#nip07-btn:active {
+    background: linear-gradient(180deg, #0a2a0a, #2a4a2a);
+}
+
+#nip07-btn:disabled {
+    background: #111130;
+    color: var(--c-dim);
+    border-color: var(--c-dim);
+    cursor: not-allowed;
 }
 
 #audit-btn {

@@ -1,6 +1,6 @@
 import { nip19, SimplePool } from 'https://esm.sh/nostr-tools';
 import { DEFAULT_RELAYS } from './config.js';
-import { npubInput, auditBtn, relayList } from './dom.js';
+import { npubInput, nip07Btn, auditBtn, relayList } from './dom.js';
 import { getAudio, errBeep, okBeep } from './audio.js';
 import { say, clearQueue, setOnAllDone } from './dialog.js';
 import { setSprite, startInvestigating, stopInvestigating } from './sprite.js';
@@ -25,7 +25,8 @@ import { queryRelayForKinds } from './relay-query.js';
 
 let isAuditing = false;
 
-export async function startAudit() {
+export async function startAudit(opts = {}) {
+    const { fromNip07 = false } = opts;
     if (isAuditing) return;
 
     const rawNpub = npubInput.value.trim();
@@ -50,12 +51,16 @@ export async function startAudit() {
     isAuditing = true;
     clearQueue();
     auditBtn.disabled = true;
+    nip07Btn.disabled = true;
     clearRelayPanel();
     addScanBar();
     setScanProgress(0);
 
     setSprite('idle', 'bounce');
-    await say(`Very well. Initiating full diagnostic for patient ${rawNpub.slice(0, 16)}...`, () => {
+    const intro = fromNip07
+        ? `Ah, NIP-07! Identity verified by extension. Very well — initiating full diagnostic for patient ${rawNpub.slice(0, 16)}...`
+        : `Very well. Initiating full diagnostic for patient ${rawNpub.slice(0, 16)}...`;
+    await say(intro, () => {
         startInvestigating();
     });
 
@@ -105,11 +110,12 @@ export async function startAudit() {
     }
 
     if (userRelays.length > 0) {
-        await say(`Found <span class="hi">${userRelays.length}</span> relay(s) from your k3 / k10002 / k10051. Investigating all of them...`);
+        await say(`Found <span class="hi">${userRelays.length}</span> relay(s) in your metadata. Querying each for your latest events...`);
     } else if (invalidUserRelays.length > 0) {
-        await say("Found relay tags but <span class='err'>all URLs were invalid</span>. Using standard relays for the audit...");
+        const badCount = invalidUserRelays.length;
+        await say(`Relay tags present but <span class='err'>all ${badCount} URL(s) invalid</span> — malformed wss:// or hostnames. Falling back to standard relays.`);
     } else {
-        await say("No relay lists found in your profile. Using standard relays for the audit...");
+        await say("No relay lists in k3 / k10002 / k10051. Using bootstrap relays — consider advertising your relays for better client discovery.");
     }
 
     const toQuery = relaysToInvestigate.filter(r => !relayData[r]);
@@ -227,12 +233,24 @@ export async function startAudit() {
     } else if (maxK0 > 0) {
         vitalItems.push({ type: 'warn', text: 'Profile (kind 0) found but content empty' });
     }
-    if (vitalItems.length > 0) appendResultSection('PROFILE VITAL SIGNS', vitalItems);
+    if (vitalItems.length > 0) {
+        appendResultSection('PROFILE VITAL SIGNS', vitalItems);
+        const vitalWarn = vitalItems.filter(i => i.type === 'warn').length;
+        const vitalErr = vitalItems.filter(i => i.type === 'err').length;
+        if (vitalErr > 0) {
+            await say(`Vital signs show gaps — ${vitalErr} issue(s) that may affect identity verification or client compatibility.`);
+        } else if (vitalWarn > 0) {
+            await say(`Profile basics present; ${vitalWarn} optional field(s) could strengthen your identity (NIP-05, about, picture).`);
+        } else {
+            await say(`Vital signs healthy — name, picture, and identity markers look good.`);
+        }
+    }
 
     const resilienceItems = [];
     if (relaysToInvestigate.length <= 1) {
         resilienceItems.push({ type: 'warn', text: 'Single relay — fragile! One outage = total unavailability' });
         resilienceItems.push({ type: 'warn', text: 'Prescription: Add more relays to k3 / k10002 / k10051 for redundancy' });
+        await say(`<span class="warn">Single relay</span> — one outage and your profile is unreachable. Add 2–3 more relays for redundancy.`);
     } else {
         resilienceItems.push({ type: 'ok', text: `${relaysToInvestigate.length} relay(s) — good redundancy` });
     }
@@ -253,7 +271,16 @@ export async function startAudit() {
         const d = daysAgo(max10051);
         freshnessItems.push({ type: d !== null && d > 365 ? 'warn' : 'ok', text: `KeyPackage list (k10051): ${d === 0 ? 'today' : d === 1 ? '1 day ago' : d < 365 ? `${d} days ago` : `over 1 year ago (${d} days)`}` });
     }
-    if (freshnessItems.length > 0) appendResultSection('EVENT FRESHNESS', freshnessItems);
+    if (freshnessItems.length > 0) {
+        appendResultSection('EVENT FRESHNESS', freshnessItems);
+        const staleK0 = maxK0 ? daysAgo(maxK0) : null;
+        const staleK3 = maxK3 ? daysAgo(maxK3) : null;
+        if (staleK0 !== null && staleK0 > 365) {
+            await say(`Profile last updated ${staleK0} days ago — consider refreshing if your details have changed.`);
+        } else if (staleK3 !== null && staleK3 > 365) {
+            await say(`Contacts list is ${staleK3} days old — rebroadcast if you've added new follows.`);
+        }
+    }
 
     const bestK3 = maxK3 ? [...relaysToInvestigate].map(r => relayData[r]?.[3]).find(e => e?.created_at === maxK3) : null;
     const followCount = bestK3?.tags?.filter(t => t[0] === 'p' && t[1]).length ?? 0;
@@ -265,10 +292,13 @@ export async function startAudit() {
     if (socialItems.length > 0) appendResultSection('SOCIAL GRAPH', socialItems);
 
     if (hasCrossed) {
-        await say(`<span class="err">⚠ CROSSED WIRES DETECTED!</span> Some relays have stale or missing events. See the panel above for details.`);
+        const problemRelays = [...new Set(cwItems.filter(i => i.type !== 'ok').map(i => i.text.split(' — ')[0]))];
+        const named = problemRelays.slice(0, 3).join(', ');
+        const extras = problemRelays.length > 3 ? ` and ${problemRelays.length - 3} more` : '';
+        await say(`<span class="err">⚠ CROSSED WIRES!</span> ${problemRelays.length} relay(s) showing stale or missing data: ${named}${extras}. A rebroadcast of your profile and contacts will bring them into sync.`);
         errBeep();
     } else {
-        await say(`<span class="ok">✔ Profile and Contacts are perfectly in sync</span> across all your relays.`);
+        await say(`<span class="ok">✔ Perfect sync</span> — Profile and Contacts identical across all ${relaysToInvestigate.length} relay(s). Excellent consistency.`);
         okBeep();
     }
 
@@ -282,6 +312,7 @@ export async function startAudit() {
     if (!best10051) {
         mipItems.push({ type: 'err', text: 'Missing Relay List (kind 10051) — not Marmot-ready' });
         marmotOk = false;
+        await say("No <span class='err'>kind 10051</span> found — this profile cannot advertise KeyPackage relays. Marmot messaging unavailable until you publish one.");
     } else {
         mipItems.push({ type: 'ok', text: 'Relay List (kind 10051) found' });
         if (best10051.content && best10051.content.trim() !== '') {
@@ -353,6 +384,7 @@ export async function startAudit() {
             if (kpEvents.length === 0) {
                 mipItems.push({ type: 'err', text: 'No KeyPackages (kind 443) found on advertised relays' });
                 marmotOk = false;
+                await say(`Kind 10051 lists ${marmotRelays.length} relay(s), but <span class='err'>no KeyPackages (k443)</span> found. Your client must publish at least one to receive Marmot DMs.`);
             } else {
                 mipItems.push({ type: 'ok', text: `${kpEvents.length} KeyPackage(s) found` });
 
@@ -418,8 +450,17 @@ export async function startAudit() {
 
                 if (kpErrors === 0) {
                     mipItems.push({ type: 'ok', text: 'All KeyPackages pass MIP-00 / MIP-01 checks' });
+                    await say(`All <span class="ok">${kpEvents.length} KeyPackage(s)</span> pass MIP-00/01. Marmot protocol compliant.`);
                 } else {
                     mipItems.push({ type: 'err', text: `${kpErrors} KeyPackage(s) failed validation` });
+                    const errTexts = mipItems.filter(i => i.type === 'err' && i.text?.startsWith('KP ')).map(i => i.text);
+                    const hasEncoding = errTexts.some(t => t.includes('encoding') || t.includes('base64'));
+                    const hasExt = errTexts.some(t => t.includes('0xf2ee') || t.includes('0x000a') || t.includes('extensions'));
+                    let hint = '';
+                    if (hasEncoding && hasExt) hint = ' — typically encoding (use base64) and mls_extensions (0xf2ee, 0x000a) need fixing.';
+                    else if (hasEncoding) hint = ' — check encoding tag: must be base64.';
+                    else if (hasExt) hint = ' — mls_extensions must include 0xf2ee (marmot_group_data) and 0x000a (last_resort).';
+                    await say(`<span class="err">${kpErrors} KeyPackage(s) failed</span> validation${hint}`);
                 }
             }
         }
@@ -695,19 +736,25 @@ export async function startAudit() {
         flashScreen('ok');
         okBeep();
         setTimeout(() => okBeep(), 200);
-        say("Diagnosis complete. <span class='ok'>Clean bill of health!</span> This profile is fully synced and Marmot-ready. No further action required.");
+        const kpCount = kpEventsCollected.length;
+        say(`Diagnosis complete. <span class='ok'>Clean bill of health!</span> ${totalRelays} relay(s), ${kpCount} KeyPackage(s), all in sync and Marmot-ready. Patient discharged.`);
     } else if (!hasFailures) {
         setSprite('writing', 'bounce');
         flashScreen('ok');
         okBeep();
-        say("Diagnosis complete. A few minor issues to address — nothing critical. See the prescription above.");
+        say(`Diagnosis complete. ${findings.warn.length} minor issue(s) — nothing critical. Follow the prescription above when convenient.`);
     } else {
         setSprite('blocked', 'error');
         flashScreen('err');
         errBeep();
-        say("Diagnosis complete. <span class='err'>Issues detected.</span> Please review the full report and follow the prescription above.");
+        const topFail = findings.fail[0] || '';
+        const summary = topFail.length > 70 ? topFail.slice(0, 67) + '…' : topFail;
+        say(`Diagnosis complete. <span class='err'>${findings.fail.length} critical issue(s).</span> First: ${summary}`);
     }
 
     isAuditing = false;
-    setOnAllDone(() => { auditBtn.disabled = false; });
+    setOnAllDone(() => {
+        auditBtn.disabled = false;
+        nip07Btn.disabled = false;
+    });
 }
