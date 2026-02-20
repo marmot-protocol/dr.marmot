@@ -25,6 +25,68 @@ import { queryRelayForKinds } from './relay-query.js';
 
 let isAuditing = false;
 
+const FAILURE_CATEGORIES = {
+    'relay-config': ['Invalid relay', 'invalid relay', 'kind 10051 relay', 'relay URLs'],
+    'sync': ['sync', 'outdated', 'missing', 'stale', 'Profile (kind 0)', 'Contacts (kind 3)', 'not found'],
+    'marmot-foundation': ['kind 10051', 'No KeyPackage Relay', 'no relay tags', 'KeyPackage relay'],
+    'keypackage': ['KeyPackage', 'KP ', 'kind 443', 'encoding', '0xf2ee', '0x000a', 'mls_', 'relays tag'],
+};
+
+function categorizeFailures(failures) {
+    const cats = new Set();
+    for (const f of failures) {
+        const t = (f || '').toLowerCase();
+        let added = false;
+        for (const [cat, keywords] of Object.entries(FAILURE_CATEGORIES)) {
+            if (keywords.some(k => t.includes(k.toLowerCase()))) {
+                cats.add(cat);
+                added = true;
+                break;
+            }
+        }
+        if (!added) cats.add('keypackage');
+    }
+    return [...cats];
+}
+
+function prescriptionPriority(text) {
+    const t = (text || '').toLowerCase();
+    if (t.includes('invalid relay') && t.includes('k3 / k10002')) return 1;
+    if (t.includes('rebroadcast') || (t.includes('profile') && t.includes('contacts'))) return 2;
+    if (t.includes('kind 10051') && (t.includes('publish') || t.includes('add relay') || t.includes('invalid relay'))) return 3;
+    if (t.includes('delete events') || t.includes('keypackage') || t.includes('encoding') || t.includes('0xf2ee') || t.includes('0x000a') || t.includes('mls_') || t.includes('relays tag')) return 4;
+    return 5;
+}
+
+function getRootCauseHint(ctx) {
+    if (ctx.invalidRelayCount > 0) return 'Invalid URLs break relay discovery — fix those before anything else.';
+    if (!ctx.has10051 && (ctx.kpCount === 0 || ctx.marmotRelayCount === 0)) return "Without kind 10051, KeyPackages can't be advertised — publish that first.";
+    if (ctx.hasCrossedWires && (ctx.has10051 || ctx.marmotRelayCount > 0)) return 'Sync issues can delay KeyPackage discovery; fix sync first.';
+    return null;
+}
+
+function pickClosingMessage(ctx, failures, categories) {
+    if (categories.includes('relay-config') && !categories.includes('sync') && !categories.includes('marmot-foundation') && !categories.includes('keypackage')) {
+        return 'Invalid relay URLs in your metadata. Fix those first; other checks depend on valid relays. See prescription.';
+    }
+    if (categories.includes('sync') && !categories.includes('relay-config') && !categories.includes('marmot-foundation') && !categories.includes('keypackage')) {
+        return "Profile and contacts out of sync across relays. Rebroadcast to all relays — that's the main fix.";
+    }
+    const marmotOnly = categories.includes('marmot-foundation') && !categories.includes('relay-config') && !categories.includes('sync');
+    const kpOnly = categories.includes('keypackage') && !categories.includes('relay-config') && !categories.includes('sync') && !categories.includes('marmot-foundation');
+    if (marmotOnly && !kpOnly) {
+        return 'Marmot messaging unavailable. Publish kind 10051 first, then KeyPackages. See prescription.';
+    }
+    if (kpOnly) {
+        return 'KeyPackages failed MIP-00/01. Fix encoding and mls_extensions per prescription.';
+    }
+    if (categories.length >= 2) {
+        return '<em>Start with</em> relay/sync fixes so KeyPackages propagate; then address Marmot setup. See prescription.';
+    }
+    const topFail = failures[0] || '';
+    return topFail.length > 70 ? topFail.slice(0, 67) + '…' : topFail;
+}
+
 export async function startAudit(opts = {}) {
     const { fromNip07 = false } = opts;
     if (isAuditing) return;
@@ -69,6 +131,26 @@ export async function startAudit(opts = {}) {
     let invalidMarmot = [];
     let kpEventsCollected = [];
 
+    const auditCtx = {
+        userRelayCount: 0,
+        invalidRelayCount: 0,
+        usedBootstrapFallback: false,
+        hasCrossedWires: false,
+        syncedRelays: 0,
+        totalRelays: 0,
+        staleRelays: 0,
+        missingRelays: 0,
+        problemRelayNames: [],
+        vitalErrCount: 0,
+        vitalWarnCount: 0,
+        nip05Verified: false,
+        has10051: false,
+        marmotRelayCount: 0,
+        kpCount: 0,
+        kpErrorCount: 0,
+        kpNoOverlapWithMain: false,
+    };
+
     await say("Taking your pulse... connecting to bootstrap relays to discover your relay list.");
 
     for (const r of DEFAULT_RELAYS) {
@@ -108,6 +190,10 @@ export async function startAudit(opts = {}) {
     if (urlValidityItems.length > 0) {
         appendResultSection('RELAY URL VALIDITY', urlValidityItems);
     }
+
+    auditCtx.userRelayCount = userRelays.length;
+    auditCtx.invalidRelayCount = invalidUserRelays.length;
+    auditCtx.usedBootstrapFallback = userRelays.length === 0;
 
     if (userRelays.length > 0) {
         await say(`Found <span class="hi">${userRelays.length}</span> relay(s) in your metadata. Querying each for your latest events...`);
@@ -237,6 +323,9 @@ export async function startAudit(opts = {}) {
         appendResultSection('PROFILE VITAL SIGNS', vitalItems);
         const vitalWarn = vitalItems.filter(i => i.type === 'warn').length;
         const vitalErr = vitalItems.filter(i => i.type === 'err').length;
+        auditCtx.vitalErrCount = vitalErr;
+        auditCtx.vitalWarnCount = vitalWarn;
+        auditCtx.nip05Verified = vitalItems.some(i => i.text && i.text.includes('✓ verified'));
         if (vitalErr > 0) {
             await say(`Vital signs show gaps — ${vitalErr} issue(s) that may affect identity verification or client compatibility.`);
         } else if (vitalWarn > 0) {
@@ -246,13 +335,26 @@ export async function startAudit(opts = {}) {
         }
     }
 
+    let relayReachable = 0;
+    for (const r of relaysToInvestigate) {
+        const d = relayData[r];
+        if (d && (d[0] || d[3] || d[10051])) relayReachable++;
+    }
+    const relayReachabilityItem = relayReachable < relaysToInvestigate.length
+        ? { type: 'warn', text: `${relayReachable} of ${relaysToInvestigate.length} relay(s) reachable — some failed to respond; check relay status or firewall` }
+        : { type: 'ok', text: `${relayReachable} of ${relaysToInvestigate.length} relay(s) reachable` };
+
     const resilienceItems = [];
+    resilienceItems.push(relayReachabilityItem);
     if (relaysToInvestigate.length <= 1) {
         resilienceItems.push({ type: 'warn', text: 'Single relay — fragile! One outage = total unavailability' });
         resilienceItems.push({ type: 'warn', text: 'Prescription: Add more relays to k3 / k10002 / k10051 for redundancy' });
         await say(`<span class="warn">Single relay</span> — one outage and your profile is unreachable. Add 2–3 more relays for redundancy.`);
     } else {
         resilienceItems.push({ type: 'ok', text: `${relaysToInvestigate.length} relay(s) — good redundancy` });
+        if (relayReachable < relaysToInvestigate.length) {
+            await say(`<span class="warn">${relayReachable} of ${relaysToInvestigate.length} relay(s) reachable</span> — some failed to respond. Check relay status or firewall.`);
+        }
     }
     appendResultSection('RELAY RESILIENCE', resilienceItems);
 
@@ -293,6 +395,8 @@ export async function startAudit(opts = {}) {
 
     if (hasCrossed) {
         const problemRelays = [...new Set(cwItems.filter(i => i.type !== 'ok').map(i => i.text.split(' — ')[0]))];
+        auditCtx.hasCrossedWires = true;
+        auditCtx.problemRelayNames = problemRelays;
         const named = problemRelays.slice(0, 3).join(', ');
         const extras = problemRelays.length > 3 ? ` and ${problemRelays.length - 3} more` : '';
         await say(`<span class="err">⚠ CROSSED WIRES!</span> ${problemRelays.length} relay(s) showing stale or missing data: ${named}${extras}. A rebroadcast of your profile and contacts will bring them into sync.`);
@@ -303,17 +407,22 @@ export async function startAudit(opts = {}) {
     }
 
     setSprite('working', 'bounce');
-    await say("Now running the Marmot Protocol panel — MIP-00 / MIP-01 compliance scan...");
+    const marmotIntro = auditCtx.hasCrossedWires
+        ? "Now running the Marmot Protocol panel — MIP-00 / MIP-01 compliance scan. I noticed sync issues earlier — rebroadcasting will help KeyPackage propagation."
+        : "Now running the Marmot Protocol panel — MIP-00 / MIP-01 compliance scan...";
+    await say(marmotIntro);
 
     const mipItems = [];
     let marmotOk = true;
     let marmotRelays = [];
 
     if (!best10051) {
+        auditCtx.has10051 = false;
         mipItems.push({ type: 'err', text: 'Missing Relay List (kind 10051) — not Marmot-ready' });
         marmotOk = false;
         await say("No <span class='err'>kind 10051</span> found — this profile cannot advertise KeyPackage relays. Marmot messaging unavailable until you publish one.");
     } else {
+        auditCtx.has10051 = true;
         mipItems.push({ type: 'ok', text: 'Relay List (kind 10051) found' });
         if (best10051.content && best10051.content.trim() !== '') {
             mipItems.push({ type: 'warn', text: 'kind 10051 content should be empty' });
@@ -339,9 +448,11 @@ export async function startAudit(opts = {}) {
             marmotOk = false;
         }
         if (marmotRelays.length === 0 && rawMarmotRelays.length > 0) {
+            auditCtx.marmotRelayCount = 0;
             mipItems.push({ type: 'err', text: 'All kind 10051 relay URLs are invalid!' });
             marmotOk = false;
         } else if (marmotRelays.length === 0) {
+            auditCtx.marmotRelayCount = 0;
             mipItems.push({ type: 'err', text: 'kind 10051 has no relay tags!' });
             marmotOk = false;
         } else {
@@ -355,9 +466,12 @@ export async function startAudit(opts = {}) {
             if (mainRelaySet.size > 0) {
                 const hasOverlap = marmotRelays.some(u => mainRelaySet.has(u.trim().toLowerCase()));
                 if (!hasOverlap) {
+                    auditCtx.kpNoOverlapWithMain = true;
                     mipItems.push({ type: 'warn', text: 'KeyPackage relays not in your main relay list (k3/k10002) — inviters may need to connect to extra relays to find your KeyPackages' });
+                    await say("KeyPackage relays aren't in your main relay list — inviters may need to connect to extra relays to find you.");
                 }
             }
+            auditCtx.marmotRelayCount = marmotRelays.length;
             await say(`Found <span class="hi">${marmotRelays.length}</span> KeyPackage relay(s). Fetching KeyPackages (kind 443)...`);
 
             for (const r of marmotRelays) {
@@ -368,6 +482,7 @@ export async function startAudit(opts = {}) {
             try {
                 kpEvents = await pool.querySync(marmotRelays, { authors: [pubkey], kinds: [443] });
                 kpEventsCollected = kpEvents;
+                auditCtx.kpCount = kpEvents.length;
                 for (const r of marmotRelays) {
                     setRelayState(r, 'ok', 'KP OK');
                 }
@@ -390,6 +505,7 @@ export async function startAudit(opts = {}) {
 
                 const marmotRelaySet = new Set(marmotRelays.map(u => u.toLowerCase()));
                 let kpErrors = 0;
+                let kpsWithoutClient = 0;
                 for (const kp of kpEvents) {
                     const enc = kp.tags.find(t => t[0] === 'encoding');
                     const ver = kp.tags.find(t => t[0] === 'mls_protocol_version');
@@ -444,22 +560,32 @@ export async function startAudit(opts = {}) {
                         }
                         marmotOk = false;
                     } else {
+                        if (!kp.tags?.find(t => t[0] === 'client' && t[1])) kpsWithoutClient++;
                         mipItems.push({ type: 'ok', text: `KP ${kp.id.slice(0, 8)}… — all tags valid` });
                     }
+                }
+
+                if (kpsWithoutClient > 0) {
+                    mipItems.push({ type: 'warn', text: 'KeyPackages lack client tag — add it for better UX when signing keys are on another device' });
                 }
 
                 if (kpErrors === 0) {
                     mipItems.push({ type: 'ok', text: 'All KeyPackages pass MIP-00 / MIP-01 checks' });
                     await say(`All <span class="ok">${kpEvents.length} KeyPackage(s)</span> pass MIP-00/01. Marmot protocol compliant.`);
                 } else {
+                    auditCtx.kpErrorCount = kpErrors;
                     mipItems.push({ type: 'err', text: `${kpErrors} KeyPackage(s) failed validation` });
                     const errTexts = mipItems.filter(i => i.type === 'err' && i.text?.startsWith('KP ')).map(i => i.text);
                     const hasEncoding = errTexts.some(t => t.includes('encoding') || t.includes('base64'));
                     const hasExt = errTexts.some(t => t.includes('0xf2ee') || t.includes('0x000a') || t.includes('extensions'));
+                    const hasRelays = errTexts.some(t => t.includes('relays') || t.includes('no overlap'));
+                    const hasITag = errTexts.some(t => t.includes('i tag') || t.includes('KeyPackageRef'));
                     let hint = '';
                     if (hasEncoding && hasExt) hint = ' — typically encoding (use base64) and mls_extensions (0xf2ee, 0x000a) need fixing.';
                     else if (hasEncoding) hint = ' — check encoding tag: must be base64.';
                     else if (hasExt) hint = ' — mls_extensions must include 0xf2ee (marmot_group_data) and 0x000a (last_resort).';
+                    else if (hasRelays) hint = ' — relays tag must list valid wss:// URLs and overlap with your kind 10051.';
+                    else if (hasITag) hint = ' — i tag must be hex KeyPackageRef with length matching your ciphersuite.';
                     await say(`<span class="err">${kpErrors} KeyPackage(s) failed</span> validation${hint}`);
                 }
             }
@@ -544,6 +670,11 @@ export async function startAudit(opts = {}) {
             else staleRelays++;
         }
     }
+
+    auditCtx.syncedRelays = syncedRelays;
+    auditCtx.totalRelays = totalRelays;
+    auditCtx.staleRelays = staleRelays;
+    auditCtx.missingRelays = missingRelays;
 
     if (maxK0 === 0) {
         findings.fail.push('Profile (kind 0) not found on any relay');
@@ -674,7 +805,7 @@ export async function startAudit(opts = {}) {
     if (best10051 && marmotRelays.length > 0) {
         prescriptions.push('MIP-00: Rotate MLS signing keys periodically within groups; ensure your client supports this');
     }
-    const uniqueRx = [...new Set(prescriptions)];
+    const uniqueRx = [...new Set(prescriptions)].sort((a, b) => prescriptionPriority(a) - prescriptionPriority(b));
 
     let cardHTML = `<div class="diagnosis-card">`;
     cardHTML += `<div class="diagnosis-header ${verdictClass}">`;
@@ -747,9 +878,14 @@ export async function startAudit(opts = {}) {
         setSprite('blocked', 'error');
         flashScreen('err');
         errBeep();
-        const topFail = findings.fail[0] || '';
-        const summary = topFail.length > 70 ? topFail.slice(0, 67) + '…' : topFail;
-        say(`Diagnosis complete. <span class='err'>${findings.fail.length} critical issue(s).</span> First: ${summary}`);
+        const categories = categorizeFailures(findings.fail);
+        const rootHint = getRootCauseHint(auditCtx);
+        const mainMsg = pickClosingMessage(auditCtx, findings.fail, categories);
+        const useRootHint = rootHint && categories.length >= 2;
+        const closing = useRootHint
+            ? `Diagnosis complete. <span class='err'>${findings.fail.length} critical issue(s).</span> ${rootHint} ${mainMsg}`
+            : `Diagnosis complete. <span class='err'>${findings.fail.length} critical issue(s).</span> ${mainMsg}`;
+        say(closing);
     }
 
     isAuditing = false;
