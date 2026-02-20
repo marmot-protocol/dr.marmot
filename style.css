@@ -231,7 +231,7 @@ body {
     width: 200px;
     height: 222px;
     overflow: hidden;
-    background-image: url('spritesheet.png');
+    background-image: url('spritesheet-marmot.png');
     background-size: 600px 444px;
     background-repeat: no-repeat;
     image-rendering: pixelated;
@@ -241,7 +241,107 @@ body {
     background-position: 0px 0px;
 }
 
-/* Pose map — col step = -200px, row step = -222px
+/* Marmot — original, 6 poses */
+#sprite-panel[data-sprite-style="marmot"] #doctor-sprite {
+    background-image: url('spritesheet-marmot.png');
+}
+
+/* Sunny — cute original, 6 poses */
+#sprite-panel[data-sprite-style="sunny"] #doctor-sprite {
+    background-image: url('spritesheet-sunny.png');
+}
+
+/* Professor — silver marmot, professorial, 6 poses */
+#sprite-panel[data-sprite-style="professor"] #doctor-sprite {
+    background-image: url('spritesheet-professor.png');
+}
+
+/* Sparky — bright, cheerful, energetic, 6 poses */
+#sprite-panel[data-sprite-style="sparky"] #doctor-sprite {
+    background-image: url('spritesheet-sparky.png');
+}
+
+/* Nuts — scruffy mad scientist, 6 poses */
+#sprite-panel[data-sprite-style="nuts"] #doctor-sprite {
+    background-image: url('spritesheet-nuts.png');
+}
+
+/* Daimon — Dr. Marmot as Daimon Michiko ("I never fail"), surgical scrubs, 6 poses
+   Sheet is 4×2 (poses in cols 0–2); scale so each cell = 200×222 */
+#sprite-panel[data-sprite-style="daimon"] #doctor-sprite {
+    background-image: url('spritesheet-daimon.png');
+    background-size: 800px 444px;
+}
+
+/* House — Dr. Marmot as Gregory House, cane, cynical diagnostician, 6 poses */
+#sprite-panel[data-sprite-style="house"] #doctor-sprite {
+    background-image: url('spritesheet-house.png');
+}
+
+/* Bubbly — expanded cute, 4×3 grid, 12 poses */
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite {
+    background-image: url('spritesheet-bubbly.png');
+    background-size: 800px 666px;
+}
+
+/* Cute2 pose map — 4 cols × 3 rows */
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="idle"] {
+    background-position: 0 0;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="magnify"] {
+    background-position: -200px 0;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="dig"] {
+    background-position: -400px 0;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="thinking"] {
+    background-position: -600px 0;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="working"] {
+    background-position: 0 -222px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="blocked"] {
+    background-position: -200px -222px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="writing"] {
+    background-position: -400px -222px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="thumbs-up"] {
+    background-position: -600px -222px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="wave"] {
+    background-position: 0 -444px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="surprised"] {
+    background-position: -200px -444px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="listening"] {
+    background-position: -400px -444px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="shrug"] {
+    background-position: -600px -444px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="success"] {
+    background-position: -600px -222px;
+}
+
+#sprite-panel[data-sprite-style="bubbly"] #doctor-sprite[data-state="error"] {
+    background-position: -600px -444px;
+}
+
+/* Classic pose map — 3 cols × 2 rows, step -200px × -222px
    row0: idle, magnify, dig
    row1: working, blocked, writing */
 #doctor-sprite[data-state="idle"] {

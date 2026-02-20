@@ -27,7 +27,7 @@
                     <div id="sprite-scene">
                         <div id="doctor-sprite" data-state="idle"></div>
                     </div>
-                    <div id="sprite-label">DR. MARMOT</div>
+                    <div id="sprite-label"></div>
                 </div>
                 <div id="status-panel">
                     <div id="status-panel-title">◈ RELAY STATUS</div>
@@ -37,7 +37,7 @@
                     <div id="dialog-box">
                         <div id="dialog-name-tag">
                             <span id="dialog-portrait">🦫</span>
-                            <span id="dialog-speaker">Dr. Marmot</span>
+                            <span id="dialog-speaker"></span>
                         </div>
                         <div id="dialog-text"></div>
                         <div id="dialog-arrow" class="hidden">▼</div>
@@ -64,6 +64,20 @@
         </div>
     </div>
 
+    <script>
+        (function () {
+            var styles = ['marmot', 'sunny', 'bubbly', 'professor', 'sparky', 'nuts', 'daimon', 'house'];
+            var names = { 'marmot': 'Dr. Marmot', 'sunny': 'Dr. Sunny Marmot', 'bubbly': 'Dr. Bubbly Marmot', 'professor': 'Dr. Professor Marmot', 'sparky': 'Dr. Sparky Marmot', 'nuts': 'Dr. Nuts Marmot', 'daimon': 'Dr. Daimon Marmot', 'house': 'Dr. House Marmot' };
+            var style = styles[Math.floor(Math.random() * styles.length)];
+            var panel = document.getElementById('sprite-panel');
+            var label = document.getElementById('sprite-label');
+            var speaker = document.getElementById('dialog-speaker');
+            if (panel) panel.dataset.spriteStyle = style;
+            var name = names[style] || 'Dr. Marmot';
+            if (label) label.textContent = name.toUpperCase();
+            if (speaker) speaker.textContent = name;
+        })();
+    </script>
     <script type="module" src="js/main.js"></script>
 </body>
 

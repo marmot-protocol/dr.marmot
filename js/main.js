@@ -4,9 +4,24 @@ import { say } from './dialog.js';
 import { setSprite } from './sprite.js';
 import { startAudit } from './audit.js';
 import { initStarfield } from './starfield.js';
-import { npubInput, nip07Btn, auditBtn } from './dom.js';
+import { getDisplayName, speak } from './personalities.js';
+import { npubInput, nip07Btn, auditBtn, spritePanel, dialogSpeaker, spriteLabel } from './dom.js';
+
+const SPRITE_STYLES = ['marmot', 'sunny', 'bubbly', 'professor', 'sparky', 'nuts', 'daimon', 'house'];
+
+function initSpriteStyle() {
+    /* Inline script in HTML sets style before first paint; only sync if missing */
+    if (!spritePanel?.dataset?.spriteStyle) {
+        const style = SPRITE_STYLES[Math.floor(Math.random() * SPRITE_STYLES.length)];
+        spritePanel.dataset.spriteStyle = style;
+    }
+    const name = getDisplayName();
+    if (dialogSpeaker) dialogSpeaker.textContent = name;
+    if (spriteLabel) spriteLabel.textContent = name.toUpperCase();
+}
 
 initStarfield();
+initSpriteStyle();
 
 function updateNip07Visibility() {
     nip07Btn.classList.toggle('hidden', !window.nostr);
@@ -41,4 +56,4 @@ npubInput.addEventListener('keydown', (e) => {
 });
 
 setSprite('idle');
-say("Hello! I am Doctor Marmot. Enter an npub and I'll run a full diagnostic: relay discovery from k3/k10002/k10051, sync verification across relays, Marmot Protocol (MIP-00/01) compliance, and vital signs. Paste an npub or use NIP-07. *adjusts stethoscope*");
+say(speak('intro'));
