@@ -4,7 +4,7 @@ import { npubInput, nip07Btn, auditBtn, relayList } from './dom.js';
 import { getAudio, errBeep, okBeep } from './audio.js';
 import { say, clearQueue, setOnAllDone } from './dialog.js';
 import { setSprite, startInvestigating, stopInvestigating } from './sprite.js';
-import { speak } from './personalities.js';
+import { speak, getDisplayName } from './personalities.js';
 import {
     clearRelayPanel,
     setRelayState,
@@ -25,6 +25,9 @@ import { extractUserRelays } from './relay-discovery.js';
 import { queryRelayForKinds } from './relay-query.js';
 
 let isAuditing = false;
+let lastAuditState = null;
+
+export function getAuditState() { return lastAuditState; }
 
 const FAILURE_CATEGORIES = {
     'relay-config': ['Invalid relay', 'invalid relay', 'kind 10051 relay', 'relay URLs'],
@@ -807,58 +810,131 @@ export async function startAudit(opts = {}) {
     }
     const uniqueRx = [...new Set(prescriptions)].sort((a, b) => prescriptionPriority(a) - prescriptionPriority(b));
 
-    let cardHTML = `<div class="diagnosis-card">`;
-    cardHTML += `<div class="diagnosis-header ${verdictClass}">`;
-    cardHTML += `<span class="verdict-icon">${verdictIcon}</span>`;
-    cardHTML += `<span>${verdictLabel}</span>`;
+    const canRebroadcast = (staleRelays > 0 || missingRelays > 0) && (bestK0 || bestK3);
+    const canDeleteKps = missingITagIds.length > 0;
+
+    lastAuditState = {
+        bestK0,
+        bestK3,
+        relaysToInvestigate: [...relaysToInvestigate],
+        marmotRelays: [...marmotRelays],
+        kpEventsCollected: [...kpEventsCollected],
+        missingITagIds: [...missingITagIds],
+        fromNip07,
+        pubkey,
+    };
+
+    const hpTotal = findings.pass.length + findings.warn.length + findings.fail.length;
+    const hpPct = Math.round(100 * findings.pass.length / Math.max(1, hpTotal));
+    const hpClass = allOk ? 'hp-full' : !hasFailures ? 'hp-warn' : 'hp-crit';
+    const doctorName = getDisplayName();
+    const chartDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    const shortNpub = rawNpub.slice(0, 20) + '…';
+
+    let cardHTML = `<div class="patient-chart">`;
+
+    cardHTML += `<div class="chart-header">`;
+    cardHTML += `<div class="chart-header-left">`;
+    cardHTML += `<span class="chart-title">PATIENT CHART</span>`;
+    cardHTML += `<span class="chart-npub">${shortNpub}</span>`;
     cardHTML += `</div>`;
-    cardHTML += `<div class="diagnosis-body">`;
-
-    cardHTML += `<div class="diagnosis-stats">`;
-    cardHTML += `<div class="stat-box"><span class="stat-val dx-pass">${findings.pass.length}</span><span class="stat-label">PASSED</span></div>`;
-    cardHTML += `<div class="stat-box"><span class="stat-val dx-warn">${findings.warn.length}</span><span class="stat-label">WARNINGS</span></div>`;
-    cardHTML += `<div class="stat-box"><span class="stat-val dx-fail">${findings.fail.length}</span><span class="stat-label">ERRORS</span></div>`;
-    cardHTML += `<div class="stat-box"><span class="stat-val dx-info">${totalRelays}</span><span class="stat-label">RELAYS</span></div>`;
+    cardHTML += `<div class="chart-header-right">`;
+    cardHTML += `<span class="chart-doctor">${doctorName}</span>`;
+    cardHTML += `<span class="chart-date">${chartDate}</span>`;
+    cardHTML += `</div>`;
     cardHTML += `</div>`;
 
-    if (findings.fail.length > 0) {
-        cardHTML += `<div><div class="diagnosis-section-label">Errors</div><div class="diagnosis-items">`;
-        for (const f of findings.fail) {
-            cardHTML += `<div class="dx-row"><span class="dx-icon dx-fail">✖</span><span class="dx-fail">${f}</span></div>`;
-        }
-        cardHTML += `</div></div>`;
-    }
+    cardHTML += `<div class="chart-body">`;
 
-    if (findings.warn.length > 0) {
-        cardHTML += `<div><div class="diagnosis-section-label">Warnings</div><div class="diagnosis-items">`;
-        for (const w of findings.warn) {
-            cardHTML += `<div class="dx-row"><span class="dx-icon dx-warn">!</span><span class="dx-warn">${w}</span></div>`;
-        }
-        cardHTML += `</div></div>`;
-    }
+    cardHTML += `<div class="chart-section">`;
+    cardHTML += `<div class="chart-section-label">CONDITION</div>`;
+    cardHTML += `<div class="chart-condition">`;
+    cardHTML += `<span class="chart-verdict ${verdictClass}">${verdictIcon} ${verdictLabel}</span>`;
+    cardHTML += `<div class="chart-hp-row">`;
+    cardHTML += `<span class="chart-hp-label">HP</span>`;
+    cardHTML += `<div class="chart-hp-track"><div class="chart-hp-fill ${hpClass}" style="width:${hpPct}%"></div></div>`;
+    cardHTML += `<span class="chart-hp-val">${hpPct}%</span>`;
+    cardHTML += `</div>`;
+    cardHTML += `<div class="chart-stats">`;
+    cardHTML += `<span class="stat-tag dx-pass">${findings.pass.length} PASS</span>`;
+    cardHTML += `<span class="stat-tag dx-warn">${findings.warn.length} WARN</span>`;
+    cardHTML += `<span class="stat-tag dx-fail">${findings.fail.length} FAIL</span>`;
+    cardHTML += `<span class="stat-tag dx-info">${totalRelays} RELAY</span>`;
+    cardHTML += `</div>`;
+    cardHTML += `</div>`;
+    cardHTML += `</div>`;
 
-    if (findings.pass.length > 0) {
-        cardHTML += `<div><div class="diagnosis-section-label">Passed</div><div class="diagnosis-items">`;
-        for (const p of findings.pass) {
-            cardHTML += `<div class="dx-row"><span class="dx-icon dx-pass">✔</span><span class="dx-pass">${p}</span></div>`;
+    const allEffects = [
+        ...findings.fail.map(t => ({ type: 'fail', text: t })),
+        ...findings.warn.map(t => ({ type: 'warn', text: t })),
+        ...findings.pass.map(t => ({ type: 'pass', text: t })),
+    ];
+    if (allEffects.length > 0) {
+        cardHTML += `<div class="chart-section">`;
+        cardHTML += `<div class="chart-section-label">STATUS EFFECTS</div>`;
+        cardHTML += `<div class="chart-effects">`;
+        for (const e of allEffects) {
+            const icon = e.type === 'pass' ? '✔' : e.type === 'warn' ? '!' : '✖';
+            cardHTML += `<div class="dx-row"><span class="dx-icon dx-${e.type}">${icon}</span><span class="dx-${e.type}">${e.text}</span></div>`;
         }
-        cardHTML += `</div></div>`;
+        cardHTML += `</div>`;
+        cardHTML += `</div>`;
     }
 
     if (uniqueRx.length > 0) {
-        cardHTML += `<div class="diagnosis-summary">`;
-        cardHTML += `<span class="rx-label">◈ PRESCRIPTION</span>`;
+        cardHTML += `<div class="chart-section">`;
+        cardHTML += `<div class="chart-section-label">TREATMENT PLAN</div>`;
+        cardHTML += `<div class="chart-treatment">`;
         for (const rx of uniqueRx) {
-            cardHTML += `<div class="rx-item">${rx}</div>`;
+            const isRebroadcast = rx.toLowerCase().includes('rebroadcast') && rx.toLowerCase().includes('profile');
+            const isDeleteKp = rx.toLowerCase().includes('delete events') && rx.toLowerCase().includes('keypackage');
+            cardHTML += `<div class="rx-row">`;
+            cardHTML += `<span class="rx-text">${rx}</span>`;
+            if (isRebroadcast && canRebroadcast) {
+                cardHTML += `<button class="rx-action-btn" data-action="rebroadcast">REBROADCAST</button>`;
+            } else if (isDeleteKp && canDeleteKps) {
+                const disabled = !window.nostr ? ' disabled title="Requires NIP-07 extension"' : '';
+                cardHTML += `<button class="rx-action-btn rx-action-delete" data-action="delete-kps"${disabled}>DELETE KPs</button>`;
+            }
+            cardHTML += `</div>`;
         }
         cardHTML += `</div>`;
+        cardHTML += `</div>`;
     }
+
+    cardHTML += `<div class="chart-signature">── ${doctorName} ──</div>`;
 
     cardHTML += `</div></div>`;
 
     const cardContainer = document.createElement('div');
     cardContainer.innerHTML = cardHTML;
-    relayList.appendChild(cardContainer.firstElementChild);
+    const chartEl = cardContainer.firstElementChild;
+    relayList.appendChild(chartEl);
+
+    const rebroadcastBtn = chartEl.querySelector('[data-action="rebroadcast"]');
+    const deleteKpBtn = chartEl.querySelector('[data-action="delete-kps"]');
+    if (rebroadcastBtn) {
+        rebroadcastBtn.addEventListener('click', async () => {
+            const { rebroadcastProfileAndContacts } = await import('./actions.js');
+            rebroadcastBtn.disabled = true;
+            rebroadcastBtn.classList.add('working');
+            rebroadcastBtn.textContent = 'WORKING…';
+            await rebroadcastProfileAndContacts();
+            rebroadcastBtn.classList.remove('working');
+            rebroadcastBtn.textContent = 'DONE';
+        });
+    }
+    if (deleteKpBtn) {
+        deleteKpBtn.addEventListener('click', async () => {
+            const { deleteKeyPackages } = await import('./actions.js');
+            deleteKpBtn.disabled = true;
+            deleteKpBtn.classList.add('working');
+            deleteKpBtn.textContent = 'WORKING…';
+            await deleteKeyPackages();
+            deleteKpBtn.classList.remove('working');
+            deleteKpBtn.textContent = 'DONE';
+        });
+    }
 
     relayList.scrollTop = relayList.scrollHeight;
 

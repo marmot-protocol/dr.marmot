@@ -698,66 +698,191 @@ body {
     animation: pop-in 0.35s cubic-bezier(.2, .8, .3, 1.2) both;
 }
 
-/* ── FINAL DIAGNOSIS CARD ── */
-.diagnosis-card {
+/* ══════════════════════════════════════════
+   PATIENT CHART — RPG-flavored medical card
+══════════════════════════════════════════ */
+.patient-chart {
     margin-top: 1.75ch;
-    border: 0.25ch solid var(--c-border2);
-    background: rgba(0, 0, 80, 0.5);
+    border: 0.375ch solid var(--c-border2);
+    box-shadow:
+        inset 0 0 0 0.25ch var(--c-shadow),
+        inset 0 0 0 0.5ch var(--c-border),
+        0 0 3ch rgba(160, 160, 255, 0.2);
+    background: rgba(0, 0, 60, 0.6);
     padding: 0;
     animation: pop-in 0.5s cubic-bezier(.2, .8, .3, 1.2) both;
 }
 
-.diagnosis-header {
+.chart-header {
     display: flex;
-    align-items: center;
-    gap: 1.25ch;
+    justify-content: space-between;
+    align-items: flex-start;
     padding: 1.25ch 1.75ch;
-    font-size: 1.25ch;
-    letter-spacing: 0.25ch;
+    background: linear-gradient(90deg, rgba(88, 88, 248, 0.12), rgba(0, 0, 80, 0.3));
     border-bottom: 0.25ch solid var(--c-border);
+    gap: 1ch;
 }
 
-.diagnosis-header.verdict-pass {
-    background: rgba(56, 232, 88, 0.15);
-    color: var(--c-green);
-    text-shadow: 0 0 1ch var(--c-green);
-}
-
-.diagnosis-header.verdict-warn {
-    background: rgba(248, 216, 72, 0.15);
-    color: var(--c-yellow);
-    text-shadow: 0 0 1ch var(--c-yellow);
-}
-
-.diagnosis-header.verdict-fail {
-    background: rgba(248, 56, 56, 0.15);
-    color: var(--c-red);
-    text-shadow: 0 0 1ch var(--c-red);
-}
-
-.diagnosis-header .verdict-icon {
-    font-size: 1.75ch;
-}
-
-.diagnosis-body {
-    padding: 1.5ch 1.75ch;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25ch;
-}
-
-.diagnosis-section-label {
-    font-size: 0.875ch;
-    color: var(--c-cyan);
-    letter-spacing: 0.25ch;
-    margin-bottom: 0.5ch;
-    text-transform: uppercase;
-}
-
-.diagnosis-items {
+.chart-header-left,
+.chart-header-right {
     display: flex;
     flex-direction: column;
     gap: 0.375ch;
+}
+
+.chart-header-right {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.chart-title {
+    font-size: 1.25ch;
+    letter-spacing: 0.375ch;
+    color: var(--c-cyan);
+    text-shadow: 0 0 1ch var(--c-cyan);
+}
+
+.chart-npub {
+    font-size: 0.75ch;
+    color: var(--c-dim);
+    letter-spacing: 0.05ch;
+}
+
+.chart-doctor {
+    font-size: 0.875ch;
+    color: var(--c-yellow);
+    letter-spacing: 0.125ch;
+}
+
+.chart-date {
+    font-size: 0.75ch;
+    color: var(--c-dim);
+}
+
+.chart-body {
+    padding: 1.5ch 1.75ch;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5ch;
+}
+
+.chart-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75ch;
+}
+
+.chart-section-label {
+    font-size: 0.875ch;
+    color: var(--c-cyan);
+    letter-spacing: 0.25ch;
+    text-transform: uppercase;
+    padding-bottom: 0.5ch;
+    border-bottom: 0.125ch solid var(--c-border);
+}
+
+.chart-condition {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75ch;
+}
+
+.chart-verdict {
+    font-size: 1.125ch;
+    letter-spacing: 0.25ch;
+}
+
+.chart-verdict.verdict-pass {
+    color: var(--c-green);
+    text-shadow: 0 0 0.75ch var(--c-green);
+}
+
+.chart-verdict.verdict-warn {
+    color: var(--c-yellow);
+    text-shadow: 0 0 0.75ch var(--c-yellow);
+}
+
+.chart-verdict.verdict-fail {
+    color: var(--c-red);
+    text-shadow: 0 0 0.75ch var(--c-red);
+}
+
+.chart-hp-row {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+}
+
+.chart-hp-label {
+    font-size: 0.875ch;
+    color: var(--c-white);
+    flex-shrink: 0;
+    width: 3ch;
+}
+
+.chart-hp-track {
+    flex: 1;
+    height: 1.5ch;
+    background: #0a0a2a;
+    border: 0.125ch solid var(--c-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.chart-hp-fill {
+    height: 100%;
+    transition: width 1s ease-out;
+    position: relative;
+}
+
+.chart-hp-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+}
+
+.chart-hp-fill.hp-full {
+    background: linear-gradient(90deg, #28a838, var(--c-green));
+    box-shadow: 0 0 1ch var(--c-green);
+}
+
+.chart-hp-fill.hp-warn {
+    background: linear-gradient(90deg, #c8a020, var(--c-yellow));
+    box-shadow: 0 0 1ch var(--c-yellow);
+}
+
+.chart-hp-fill.hp-crit {
+    background: linear-gradient(90deg, #a82020, var(--c-red));
+    box-shadow: 0 0 1ch var(--c-red);
+}
+
+.chart-hp-val {
+    font-size: 0.875ch;
+    color: var(--c-white);
+    flex-shrink: 0;
+    width: 5ch;
+    text-align: right;
+}
+
+.chart-stats {
+    display: flex;
+    gap: 1.25ch;
+    flex-wrap: wrap;
+    margin-top: 0.25ch;
+}
+
+.stat-tag {
+    font-size: 0.75ch;
+    padding: 0.25ch 0.75ch;
+    border: 0.125ch solid currentColor;
+    letter-spacing: 0.05ch;
+}
+
+.chart-effects {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25ch;
 }
 
 .dx-row {
@@ -791,61 +916,117 @@ body {
     color: var(--c-cyan);
 }
 
-.diagnosis-summary {
-    border-top: 0.125ch solid var(--c-border);
-    padding-top: 1.25ch;
+.chart-treatment {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625ch;
+}
+
+.rx-row {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
     font-size: 1ch;
-    line-height: 1.8;
-    color: var(--c-white);
-}
-
-.diagnosis-summary .rx-label {
-    font-size: 0.875ch;
-    color: var(--c-yellow);
-    letter-spacing: 0.25ch;
-    display: block;
-    margin-bottom: 0.75ch;
-}
-
-.diagnosis-summary .rx-item {
-    padding: 0.25ch 0 0.25ch 2ch;
+    line-height: 1.7;
+    padding: 0.375ch 0 0.375ch 2ch;
     position: relative;
     color: var(--c-border2);
 }
 
-.diagnosis-summary .rx-item::before {
+.rx-row::before {
     content: '▸';
     position: absolute;
     left: 0.25ch;
     color: var(--c-yellow);
 }
 
-.diagnosis-stats {
-    display: flex;
-    gap: 2ch;
-    flex-wrap: wrap;
-    margin-top: 0.75ch;
-    padding-top: 1ch;
-    border-top: 0.125ch solid var(--c-border);
+.rx-text {
+    flex: 1;
+    min-width: 0;
 }
 
-.stat-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.375ch;
-}
-
-.stat-val {
-    font-size: 1.75ch;
-    font-weight: bold;
-}
-
-.stat-label {
+.rx-action-btn {
+    flex-shrink: 0;
+    font-family: 'Press Start 2P', monospace;
     font-size: 0.75ch;
+    padding: 0.5ch 1ch;
+    background: linear-gradient(180deg, #2a5a2a, #0a2a0a);
+    color: var(--c-green);
+    border: 0.25ch solid var(--c-green);
+    cursor: pointer;
+    letter-spacing: 0.05ch;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+}
+
+.rx-action-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.rx-action-btn:hover:not(:disabled) {
+    background: linear-gradient(180deg, #3a7a3a, #1a4a1a);
+    color: var(--c-yellow);
+    border-color: var(--c-yellow);
+    box-shadow: 0 0 1.5ch rgba(56, 232, 88, 0.4);
+}
+
+.rx-action-btn:active:not(:disabled) {
+    background: linear-gradient(180deg, #0a2a0a, #2a5a2a);
+    transform: translateY(0.125ch);
+}
+
+.rx-action-btn:disabled {
+    background: #111130;
     color: var(--c-dim);
-    letter-spacing: 0.125ch;
-    text-transform: uppercase;
+    border-color: var(--c-dim);
+    cursor: not-allowed;
+}
+
+.rx-action-btn.rx-action-delete {
+    background: linear-gradient(180deg, #5a2a2a, #2a0a0a);
+    border-color: var(--c-red);
+    color: var(--c-red);
+}
+
+.rx-action-btn.rx-action-delete:hover:not(:disabled) {
+    background: linear-gradient(180deg, #7a3a3a, #4a1a1a);
+    color: var(--c-yellow);
+    border-color: var(--c-yellow);
+    box-shadow: 0 0 1.5ch rgba(248, 56, 56, 0.4);
+}
+
+@keyframes btn-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0.5ch currentColor;
+    }
+
+    50% {
+        box-shadow: 0 0 2ch currentColor;
+    }
+}
+
+.rx-action-btn.working {
+    animation: btn-pulse 0.8s ease-in-out infinite;
+    color: var(--c-cyan);
+    border-color: var(--c-cyan);
+    background: linear-gradient(180deg, #1a2a5a, #0a1a3a);
+}
+
+.chart-signature {
+    text-align: center;
+    font-size: 0.875ch;
+    color: var(--c-dim);
+    padding-top: 1.25ch;
+    border-top: 0.125ch solid var(--c-border);
+    letter-spacing: 0.25ch;
 }
 
 /* ══════════════════════════════════════════
