@@ -1375,3 +1375,321 @@ body {
 #game-wrap.flash-err {
     animation: flash-red 0.8s ease-out;
 }
+
+/* ══════════════════════════════════════════
+   MOBILE LAYOUT — portrait phones & small tablets
+   Replaces the fixed-size+scale approach with
+   a fluid vertical layout.
+══════════════════════════════════════════ */
+@media (max-width: 768px) {
+    body {
+        font-size: 10px;
+        padding: 0;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    #screen-viewport {
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        transform: none;
+        flex-shrink: 1;
+    }
+
+    #game-wrap {
+        border-width: 2px;
+    }
+
+    /* ── Top bar: keep title, hide subtitle ── */
+    #top-bar {
+        height: auto;
+        padding: 8px 12px;
+        gap: 4px;
+    }
+
+    .title-pixel {
+        font-size: 12px;
+        letter-spacing: 2px;
+    }
+
+    .subtitle-pixel {
+        display: none;
+    }
+
+    /* ── Main area: vertical column instead of side-by-side ── */
+    #main-area {
+        flex: 1 1 0;
+        height: auto;
+        min-height: 0;
+        flex-direction: column;
+    }
+
+    /* ── Sprite: compact horizontal strip ── */
+    #sprite-panel {
+        flex: 0 0 auto;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 4px 12px;
+        border-right: none;
+        border-bottom: 2px solid var(--c-border);
+    }
+
+    #sprite-panel::before {
+        display: none;
+    }
+
+    #sprite-panel::after {
+        display: none;
+    }
+
+    #sprite-scene {
+        flex: 0 0 auto;
+        width: 80px;
+        height: 90px;
+        padding-bottom: 0;
+        position: relative;
+        display: block;
+        overflow: hidden;
+    }
+
+    #doctor-sprite {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: top left;
+        scale: 0.4;
+    }
+
+    #sprite-label {
+        padding: 0;
+        font-size: 8px;
+        letter-spacing: 2px;
+    }
+
+    /* ── Status panel: fills remaining vertical space ── */
+    #status-panel-title {
+        padding: 8px 12px;
+        font-size: 9px;
+        letter-spacing: 1px;
+    }
+
+    #relay-list {
+        padding: 8px 12px;
+        gap: 6px;
+    }
+
+    .relay-row {
+        gap: 8px;
+        padding: 6px 8px;
+        font-size: 9px;
+        grid-template-columns: 8px 1fr auto;
+    }
+
+    .relay-dot {
+        width: 8px;
+        height: 8px;
+    }
+
+    .relay-name {
+        font-size: 8px;
+    }
+
+    .relay-status {
+        font-size: 7px;
+        padding: 2px 6px;
+    }
+
+    /* ── Dialog box: sized for mobile ── */
+    #dialog-box {
+        min-height: 90px;
+        max-height: 200px;
+        padding: 18px 12px 16px;
+        border-width: 2px;
+        box-shadow:
+            inset 0 0 0 2px #000060,
+            inset 0 0 0 4px var(--c-border2),
+            inset 0 0 0 6px #000040;
+    }
+
+    #dialog-name-tag {
+        top: -12px;
+        left: 12px;
+        padding: 2px 10px 2px 6px;
+        gap: 4px;
+        border-width: 2px;
+    }
+
+    #dialog-portrait {
+        font-size: 14px;
+    }
+
+    #dialog-speaker {
+        font-size: 9px;
+    }
+
+    #dialog-text {
+        font-size: 11px;
+        line-height: 1.7;
+    }
+
+    #dialog-arrow {
+        bottom: 6px;
+        right: 10px;
+        font-size: 12px;
+    }
+
+    #dialog-hint {
+        bottom: 6px;
+        font-size: 7px;
+    }
+
+    /* ── Bottom area: auto-height, stacked input ── */
+    #bottom-area {
+        flex: 0 0 auto;
+        height: auto;
+    }
+
+    #input-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        padding: 10px 12px;
+    }
+
+    #input-row label {
+        font-size: 10px;
+    }
+
+    .input-inner {
+        flex-direction: column;
+    }
+
+    #npub-input {
+        font-size: 16px;
+        padding: 10px;
+        border-width: 2px;
+        border-right: 2px solid var(--c-border);
+        border-bottom: none;
+    }
+
+    #audit-btn {
+        flex-shrink: 1;
+        font-size: 12px;
+        padding: 12px 16px;
+        border-width: 2px;
+        border-left: 2px solid var(--c-border2);
+        border-top: none;
+        width: 100%;
+    }
+
+    #signer-box {
+        padding: 4px 12px 8px;
+        justify-content: center;
+        border-top-width: 2px;
+    }
+
+    #nip07-btn {
+        font-size: 8px;
+        padding: 6px 12px;
+        border-width: 2px;
+    }
+
+    /* ── Patient chart: mobile-friendly ── */
+    .patient-chart {
+        border-width: 2px;
+        box-shadow:
+            inset 0 0 0 1px var(--c-shadow),
+            inset 0 0 0 3px var(--c-border),
+            0 0 12px rgba(160, 160, 255, 0.2);
+    }
+
+    .chart-header {
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px 12px;
+    }
+
+    .chart-header-right {
+        text-align: left;
+    }
+
+    .chart-title {
+        font-size: 10px;
+    }
+
+    .chart-npub {
+        font-size: 7px;
+        word-break: break-all;
+    }
+
+    .chart-doctor {
+        font-size: 8px;
+    }
+
+    .chart-date {
+        font-size: 7px;
+    }
+
+    .chart-body {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .chart-section-label {
+        font-size: 8px;
+    }
+
+    .chart-verdict {
+        font-size: 10px;
+    }
+
+    .chart-hp-label {
+        font-size: 8px;
+    }
+
+    .chart-hp-val {
+        font-size: 8px;
+    }
+
+    .stat-tag {
+        font-size: 7px;
+    }
+
+    .dx-row {
+        font-size: 9px;
+        line-height: 1.6;
+    }
+
+    .rx-row {
+        font-size: 9px;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding-left: 16px;
+    }
+
+    .rx-action-btn {
+        font-size: 7px;
+        padding: 4px 8px;
+    }
+
+    .chart-signature {
+        font-size: 8px;
+    }
+
+    /* ── Result sections ── */
+    .result-section-title {
+        font-size: 9px;
+    }
+
+    .result-row {
+        font-size: 9px;
+        gap: 6px;
+    }
+
+    /* ── Scan bar ── */
+    #scan-bar-wrap {
+        height: 3px;
+    }
+}

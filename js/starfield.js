@@ -5,9 +5,13 @@ export function initStarfield() {
     let stars = [];
 
     function resize() {
-        starfieldCanvas.width = 1366;
-        starfieldCanvas.height = 768;
-        stars = Array.from({ length: 120 }, () => ({
+        const vp = starfieldCanvas.parentElement;
+        if (!vp) return;
+        starfieldCanvas.width = vp.clientWidth;
+        starfieldCanvas.height = vp.clientHeight;
+        const area = starfieldCanvas.width * starfieldCanvas.height;
+        const count = Math.max(40, Math.min(200, Math.round(area / 8500)));
+        stars = Array.from({ length: count }, () => ({
             x: Math.random() * starfieldCanvas.width,
             y: Math.random() * starfieldCanvas.height,
             r: Math.random() * 1.4 + 0.3,
