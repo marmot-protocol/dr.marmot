@@ -6,6 +6,7 @@ export function initStarfield() {
 
     function resize() {
         const vp = starfieldCanvas.parentElement;
+        if (!vp) return;
         starfieldCanvas.width = vp.clientWidth;
         starfieldCanvas.height = vp.clientHeight;
         const area = starfieldCanvas.width * starfieldCanvas.height;
