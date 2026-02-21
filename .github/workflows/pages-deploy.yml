@@ -7,6 +7,10 @@ on:
     branches: [master]
   workflow_dispatch:
 
+concurrency:
+  group: pages-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -51,21 +55,20 @@ jobs:
               issue_number: context.issue.number,
             });
             const botComment = comments.find(c =>
-              c.user.type === 'Bot' && c.body.includes('Dr. Marmot Preview')
+              c.user.login === 'github-actions[bot]' && c.body.includes('Dr. Marmot Preview')
             );
-            const commentBody = body;
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: botComment.id,
-                body: commentBody,
+                body,
               });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: commentBody,
+                body,
               });
             }
