@@ -6,9 +6,11 @@ import { setSprite } from './sprite.js';
 import { setRelayState, appendResultSection } from './relay-panel.js';
 import { okBeep, errBeep } from './audio.js';
 
+const PUBLISH_TIMEOUT_MS = 15_000;
+
 export async function rebroadcastProfileAndContacts() {
     const state = getAuditState();
-    if (!state) { await say(speak('noNip07ForAction') || 'No audit data available.'); return; }
+    if (!state) { await say(speak('noAuditData') || 'No audit data available.'); return; }
 
     const { bestK0, bestK3, relaysToInvestigate } = state;
     if (!bestK0 && !bestK3) { await say('Nothing to rebroadcast — no profile or contacts found.'); return; }
@@ -21,14 +23,24 @@ export async function rebroadcastProfileAndContacts() {
     const results = [];
     let done = 0;
 
+    const publishWithTimeout = (relay, ev) =>
+        Promise.race([
+            pool.publish([relay], ev),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('timeout')), PUBLISH_TIMEOUT_MS),
+            ),
+        ]);
+
     for (const relay of relaysToInvestigate) {
         setRelayState(relay, 'connecting', 'SENDING');
         let relayOk = true;
         for (const ev of events) {
+            if (!relayOk) break;
             try {
-                await pool.publish([relay], ev);
+                await publishWithTimeout(relay, ev);
             } catch {
                 relayOk = false;
+                break;
             }
         }
         done++;

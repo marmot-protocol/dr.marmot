@@ -69,6 +69,7 @@ const LINES = {
         deleteKpDone: "<span class='ok'>Done.</span> {count} KeyPackage deletion event(s) broadcast. Publish fresh KeyPackages with correct tags.",
         deleteKpFail: "<span class='err'>Deletion failed</span> — extension declined or relay error. Try again.",
         noNip07ForAction: "This action requires a <span class='hi'>NIP-07 extension</span> to sign events. Install nos2x, Alby, or similar.",
+        noAuditData: "No audit data available. Run a diagnostic first.",
     },
     sunny: {
         intro: "Hi!! I'm Sunny! 🌞 Paste an npub and I'll check everything — relays, sync, Marmot stuff, the works! Let's go!!",

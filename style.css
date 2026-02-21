@@ -875,7 +875,7 @@ body {
 .stat-tag {
     font-size: 0.75ch;
     padding: 0.25ch 0.75ch;
-    border: 0.125ch solid currentColor;
+    border: 0.125ch solid currentcolor;
     letter-spacing: 0.05ch;
 }
 
@@ -1005,11 +1005,11 @@ body {
 
     0%,
     100% {
-        box-shadow: 0 0 0.5ch currentColor;
+        box-shadow: 0 0 0.5ch currentcolor;
     }
 
     50% {
-        box-shadow: 0 0 2ch currentColor;
+        box-shadow: 0 0 2ch currentcolor;
     }
 }
 
