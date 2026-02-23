@@ -12,4 +12,3 @@ export const spriteLabel = document.getElementById('sprite-label');
 export const gameWrap = document.getElementById('game-wrap');
 export const dialogBox = document.getElementById('dialog-box');
 export const dialogSpeaker = document.getElementById('dialog-speaker');
-export const starfieldCanvas = document.getElementById('starfield');

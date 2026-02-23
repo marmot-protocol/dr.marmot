@@ -23,6 +23,7 @@ export function validateRelayUrl(url) {
         }
         return { valid: true };
     } catch (e) {
+        console.error('Failed to validate relay URL', e);
         return { valid: false, reason: 'malformed URL' };
     }
 }

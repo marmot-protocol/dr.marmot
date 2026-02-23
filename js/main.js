@@ -3,7 +3,6 @@ import { getAudio } from './audio.js';
 import { say, clearQueue } from './dialog.js';
 import { setSprite } from './sprite.js';
 import { startAudit, resetAuditState } from './audit.js';
-import { initStarfield } from './starfield.js';
 import { getDisplayName, speak } from './personalities.js';
 import { removeScanBar } from './scan-bar.js';
 import { npubInput, nip07Btn, nextBtn, auditBtn, spritePanel, dialogSpeaker, spriteLabel, relayList } from './dom.js';
@@ -21,7 +20,6 @@ function initSpriteStyle() {
     if (spriteLabel) spriteLabel.textContent = name.toUpperCase();
 }
 
-initStarfield();
 initSpriteStyle();
 
 function updateNip07Visibility() {

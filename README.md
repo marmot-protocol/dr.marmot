@@ -63,9 +63,8 @@ Drop the files on any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pag
 ```text
 dr.marmot/
 ├── index.html                # Entry point
-├── style.css                 # JRPG styling, CRT scanlines, starfield
+├── style.css                 # JRPG styling, CRT scanlines
 ├── spritesheet-*.png         # Character sprites (one per doctor)
-├── app.js                    # Monolithic legacy version (unused)
 └── js/
     ├── main.js               # Init, NIP-07 sign-in, event wiring
     ├── config.js             # Default relays, timeouts, limits
@@ -74,7 +73,6 @@ dr.marmot/
     ├── dialog.js             # Typewriter text renderer
     ├── sprite.js             # Sprite animation controller
     ├── audio.js              # Web Audio beep effects
-    ├── starfield.js          # Canvas starfield background
     ├── scan-bar.js           # Progress bar
     ├── relay-panel.js        # Relay status UI
     ├── relay-query.js        # Relay querying logic
@@ -87,7 +85,7 @@ dr.marmot/
 ## Tech Stack
 
 - Vanilla JavaScript — ES6 modules, no framework, no build step
-- HTML5 Canvas for the starfield, Web Audio API for the retro beeps
+- Web Audio API for the retro beeps
 - [nostr-tools](https://github.com/nbd-wtf/nostr-tools) via ESM CDN
 - [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) pixel font
 

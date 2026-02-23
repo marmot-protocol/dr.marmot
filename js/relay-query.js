@@ -17,8 +17,16 @@ export function queryRelayForKinds(pool, relayUrl, pubkey, kinds) {
                     resolve(results);
                 },
             });
-            setTimeout(() => { try { sub.close(); } catch (e) { } resolve(results); }, RELAY_TIMEOUT_MS);
+            setTimeout(() => {
+                try {
+                    sub.close();
+                } catch (e) {
+                    console.error('Failed to close subscription', e);
+                }
+                resolve(results);
+            }, RELAY_TIMEOUT_MS);
         } catch (e) {
+            console.error('Failed to query relay for kinds', e);
             resolve(results);
         }
     });

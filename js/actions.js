@@ -128,7 +128,6 @@ export async function deleteKeyPackages() {
 
     pool.close(relays);
 
-    const succeeded = results.filter(r => r.ok).length;
     const failed = results.filter(r => !r.ok).length;
     const items = results.map(r => ({
         type: r.ok ? 'ok' : 'err',

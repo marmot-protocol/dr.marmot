@@ -18,7 +18,9 @@ function beep(freq = 440, type = 'square', dur = 0.05, vol = 0.08) {
         gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + dur);
-    } catch (e) { }
+    } catch (e) {
+        console.error('Failed to play beep', e);
+    }
 }
 
 export function typeBeep() { beep(880, 'square', 0.03, 0.04); }
