@@ -70,6 +70,7 @@ const LINES = {
         deleteKpFail: "<span class='err'>Deletion failed</span> — extension declined or relay error. Try again.",
         noNip07ForAction: "This action requires a <span class='hi'>NIP-07 extension</span> to sign events. Install nos2x, Alby, or similar.",
         noAuditData: "No audit data available. Run a diagnostic first.",
+        nextPatient: "Next patient, please! Enter an npub or use NIP-07 and I'll run a full diagnostic.",
     },
     sunny: {
         intro: "Hi!! I'm Sunny! 🌞 Paste an npub and I'll check everything — relays, sync, Marmot stuff, the works! Let's go!!",
@@ -113,6 +114,7 @@ const LINES = {
         deleteKpDone: "<span class='ok'>Deleted!</span> {count} KeyPackage(s) gone! Now publish fresh ones!",
         deleteKpFail: "<span class='err'>Delete failed</span> — extension said no or relay error.",
         noNip07ForAction: "Need a <span class='hi'>NIP-07 extension</span> for this! Install one first!",
+        nextPatient: "Next patient! Let's go!! Paste an npub or use NIP-07!",
     },
     bubbly: {
         /* inherits from sunny */
@@ -159,6 +161,7 @@ const LINES = {
         deleteKpDone: "<span class='ok'>Deletion complete.</span> {count} event(s) broadcast. Replacement KeyPackages should be published promptly.",
         deleteKpFail: "<span class='err'>Deletion unsuccessful.</span> Extension declined or relay communication failure.",
         noNip07ForAction: "This procedure requires a <span class='hi'>NIP-07 extension</span> for event signing. Please install one.",
+        nextPatient: "Next patient. Present an npub and I shall conduct the diagnostic.",
     },
     sparky: {
         intro: "Hey! Sparky here! 🔥 Give me an npub and I'll run the full diagnostic — relays, sync, Marmot, vitals, the whole deal!",
@@ -202,6 +205,7 @@ const LINES = {
         deleteKpDone: "<span class='ok'>Zapped!</span> {count} KP(s) deleted! Publish new ones!",
         deleteKpFail: "<span class='err'>Zap failed</span> — extension or relay error.",
         noNip07ForAction: "Need <span class='hi'>NIP-07</span> for this — install an extension!",
+        nextPatient: "Next! Give me another npub!",
     },
     nuts: {
         intro: "GREETINGS!! I am Dr. Nuts!! Enter an NPUB and witness my DIAGNOSTIC PROTOCOL!! Relay discovery! Sync verification! Marmot compliance! VITALS!! *cackles*",
@@ -245,6 +249,7 @@ const LINES = {
         deleteKpDone: "<span class='ok'>DELETED!!</span> {count} KeyPackage(s) ELIMINATED!! PUBLISH REPLACEMENTS!!",
         deleteKpFail: "<span class='err'>DELETION FAILED!!</span> The extension REFUSED!! Or the relays REBELLED!!",
         noNip07ForAction: "IMPOSSIBLE without <span class='hi'>NIP-07</span>!! Install an extension!! SCIENCE DEMANDS IT!!",
+        nextPatient: "NEXT PATIENT!! BRING ME ANOTHER NPUB!! THE EXPERIMENTS CONTINUE!!",
     },
     daimon: {
         intro: "I am Daimon. Enter an npub. I will run the diagnostic. I never fail. *adjusts scrub cap*",
@@ -288,6 +293,7 @@ const LINES = {
         deleteKpDone: "<span class='ok'>Deleted.</span> {count} gone. Publish replacements.",
         deleteKpFail: "<span class='err'>Failed.</span> Extension or relay error.",
         noNip07ForAction: "NIP-07 required. Install an extension.",
+        nextPatient: "Next patient. Enter an npub.",
     },
     house: {
         intro: "Give me an npub. I'll run a diagnostic. Everybody lies, especially metadata. *leans on cane*",
@@ -332,6 +338,7 @@ const LINES = {
         deleteKpDone: "<span class='ok'>{count} KeyPackage(s) deleted.</span> Publish new ones. Correctly, this time.",
         deleteKpFail: "<span class='err'>Failed.</span> Extension declined. Even your browser doesn't trust you.",
         noNip07ForAction: "Need NIP-07 for this. Install an extension. I'll wait. *pops vicodin*",
+        nextPatient: "Next patient. Because apparently one isn't enough suffering for today. *limps to whiteboard*",
     },
 };
 
