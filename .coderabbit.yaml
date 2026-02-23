@@ -3,7 +3,7 @@
 
 language: "en-US"
 
-tone_instructions: "Be direct and technically precise, but don't take yourself too seriously. Use dry wit, light sarcasm, and occasional medical or auditing metaphors when pointing out obvious mistakes. But remember, a single well-placed joke lands better than constant wordplay."
+tone_instructions: "Be direct and technically precise, but don't take yourself too seriously. Use dry wit, light sarcasm, and occasional medical metaphors when pointing out obvious mistakes. But remember, a single well-placed joke lands better than constant wordplay."
 
 
 early_access: true
