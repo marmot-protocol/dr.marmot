@@ -1,11 +1,12 @@
 import { nip19 } from 'https://esm.sh/nostr-tools';
 import { getAudio } from './audio.js';
-import { say } from './dialog.js';
+import { say, clearQueue } from './dialog.js';
 import { setSprite } from './sprite.js';
-import { startAudit } from './audit.js';
+import { startAudit, resetAuditState } from './audit.js';
 import { initStarfield } from './starfield.js';
 import { getDisplayName, speak } from './personalities.js';
-import { npubInput, nip07Btn, auditBtn, spritePanel, dialogSpeaker, spriteLabel } from './dom.js';
+import { removeScanBar } from './scan-bar.js';
+import { npubInput, nip07Btn, nextBtn, auditBtn, spritePanel, dialogSpeaker, spriteLabel, relayList } from './dom.js';
 
 const SPRITE_STYLES = ['marmot', 'sunny', 'bubbly', 'professor', 'sparky', 'nuts', 'daimon', 'house'];
 
@@ -49,8 +50,22 @@ async function signInWithNip07() {
     }
 }
 
+function resetForNextPatient() {
+    getAudio();
+    clearQueue();
+    resetAuditState();
+    removeScanBar();
+    relayList.innerHTML = '<div class="relay-idle">Awaiting investigation...</div>';
+    npubInput.value = '';
+    nextBtn.classList.add('hidden');
+    setSprite('idle');
+    say(speak('nextPatient'));
+    npubInput.focus();
+}
+
 nip07Btn.addEventListener('click', () => { getAudio(); signInWithNip07(); });
 auditBtn.addEventListener('click', () => { getAudio(); startAudit(); });
+nextBtn.addEventListener('click', resetForNextPatient);
 npubInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { getAudio(); startAudit(); }
 });

@@ -1,6 +1,6 @@
 import { nip19, SimplePool } from 'https://esm.sh/nostr-tools';
 import { DEFAULT_RELAYS } from './config.js';
-import { npubInput, nip07Btn, auditBtn, relayList } from './dom.js';
+import { npubInput, nip07Btn, nextBtn, auditBtn, relayList } from './dom.js';
 import { getAudio, errBeep, okBeep } from './audio.js';
 import { say, clearQueue, setOnAllDone } from './dialog.js';
 import { setSprite, startInvestigating, stopInvestigating } from './sprite.js';
@@ -28,6 +28,11 @@ let isAuditing = false;
 let lastAuditState = null;
 
 export function getAuditState() { return lastAuditState; }
+
+export function resetAuditState() {
+    lastAuditState = null;
+    isAuditing = false;
+}
 
 const FAILURE_CATEGORIES = {
     'relay-config': ['Invalid relay', 'invalid relay', 'kind 10051 relay', 'relay URLs'],
@@ -118,6 +123,7 @@ export async function startAudit(opts = {}) {
     clearQueue();
     auditBtn.disabled = true;
     nip07Btn.disabled = true;
+    nextBtn.classList.add('hidden');
     clearRelayPanel();
     addScanBar();
     setScanProgress(0);
@@ -937,6 +943,7 @@ export async function startAudit(opts = {}) {
     }
 
     relayList.scrollTop = relayList.scrollHeight;
+    nextBtn.classList.remove('hidden');
 
     if (allOk) {
         setSprite('success', 'success');

@@ -1098,6 +1098,37 @@ body {
     border-top: 0.375ch solid var(--c-border);
 }
 
+#next-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.875ch;
+    padding: 0.625ch 1.25ch;
+    background: linear-gradient(180deg, #3838a8, #181868);
+    color: var(--c-yellow);
+    border: 0.375ch solid var(--c-border);
+    cursor: pointer;
+    letter-spacing: 0.05ch;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    position: relative;
+}
+
+#next-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 55%);
+    pointer-events: none;
+}
+
+#next-btn:hover {
+    background: linear-gradient(180deg, #5050d0, #282870);
+    color: var(--c-white);
+}
+
+#next-btn:active {
+    background: linear-gradient(180deg, #181868, #3838a8);
+}
+
 #nip07-btn {
     font-family: 'Press Start 2P', monospace;
     font-size: 0.875ch;
@@ -1588,6 +1619,12 @@ body {
         padding: 4px 12px 8px;
         justify-content: center;
         border-top-width: 2px;
+    }
+
+    #next-btn {
+        font-size: 8px;
+        padding: 6px 12px;
+        border-width: 2px;
     }
 
     #nip07-btn {
