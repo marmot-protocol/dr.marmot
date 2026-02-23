@@ -1,7 +1,7 @@
 import { nip19, SimplePool } from 'https://esm.sh/nostr-tools';
 import { DEFAULT_RELAYS } from './config.js';
 import { npubInput, nip07Btn, nextBtn, auditBtn, relayList } from './dom.js';
-import { getAudio, errBeep, okBeep } from './audio.js';
+import { errBeep, okBeep } from './audio.js';
 import { say, clearQueue, setOnAllDone } from './dialog.js';
 import { setSprite, startInvestigating, stopInvestigating } from './sprite.js';
 import { speak, getDisplayName } from './personalities.js';
@@ -111,7 +111,11 @@ export async function startAudit(opts = {}) {
     let pubkey;
     try {
         const dec = nip19.decode(rawNpub);
-        if (dec.type !== 'npub') throw new Error('bad type');
+        if (dec.type !== 'npub') {
+            say(speak('decodeFail'));
+            errBeep();
+            return;
+        }
         pubkey = dec.data;
     } catch {
         say(speak('decodeFail'));
@@ -415,9 +419,6 @@ export async function startAudit(opts = {}) {
     }
 
     setSprite('working', 'bounce');
-    const marmotIntro = auditCtx.hasCrossedWires
-        ? "Now running the Marmot Protocol panel — MIP-00 / MIP-01 compliance scan. I noticed sync issues earlier — rebroadcasting will help KeyPackage propagation."
-        : "Now running the Marmot Protocol panel — MIP-00 / MIP-01 compliance scan...";
     await say(speak(auditCtx.hasCrossedWires ? 'marmotPanelSync' : 'marmotPanel'));
 
     const mipItems = [];
@@ -496,6 +497,7 @@ export async function startAudit(opts = {}) {
                     setRelayState(r, 'ok', 'KP OK');
                 }
             } catch (e) {
+                console.error('Failed to query KeyPackage relays', e);
                 for (const r of marmotRelays) {
                     setRelayState(r, 'error', 'KP FAIL');
                 }
@@ -719,6 +721,11 @@ export async function startAudit(opts = {}) {
             findings.fail.push('kind 10051 contains no relay tags');
         } else {
             findings.pass.push(`${marmotRelays.length} KeyPackage relay(s) advertised`);
+            if (marmotOk) {
+                findings.pass.push('Marmot protocol (MIP-00/01): all checks passed');
+            } else {
+                findings.fail.push('Marmot protocol (MIP-00/01): one or more checks failed');
+            }
         }
     }
 

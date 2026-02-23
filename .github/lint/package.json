@@ -1,0 +1,14 @@
+{
+  "name": "dr-marmot-lint",
+  "private": true,
+  "description": "CI-only lint dependencies; app has zero npm deps",
+  "type": "module",
+  "scripts": {
+    "lint": "cd ../.. && node .github/lint/node_modules/.bin/eslint . -c .github/lint/eslint.config.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0"
+  }
+}
