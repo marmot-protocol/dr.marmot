@@ -1,7 +1,7 @@
-import { dialogBox } from './dom.js';
+import { dialogBox, getScanBarWrap, getScanBar } from './dom.js';
 
 export function addScanBar() {
-    if (document.getElementById('scan-bar-wrap')) return;
+    if (getScanBarWrap()) return;
     const wrap = document.createElement('div');
     wrap.id = 'scan-bar-wrap';
     wrap.innerHTML = `<div id="scan-bar" class="scanning"></div>`;
@@ -9,12 +9,12 @@ export function addScanBar() {
 }
 
 export function removeScanBar() {
-    const el = document.getElementById('scan-bar-wrap');
+    const el = getScanBarWrap();
     if (el) el.remove();
 }
 
 export function setScanProgress(pct) {
-    const bar = document.getElementById('scan-bar');
+    const bar = getScanBar();
     if (bar) {
         bar.style.width = `${pct}%`;
         if (pct >= 100) bar.classList.remove('scanning');

@@ -1,4 +1,4 @@
-import { relayList, gameWrap } from './dom.js';
+import { relayList, gameWrap, getRelayRow } from './dom.js';
 import { scanBeep } from './audio.js';
 
 export function urlToId(url) {
@@ -15,7 +15,7 @@ export function clearRelayPanel() {
 
 export function setRelayState(url, state, statusText) {
     const id = 'relay-' + urlToId(url);
-    let row = document.getElementById(id);
+    let row = getRelayRow(id);
     if (!row) {
         row = document.createElement('div');
         row.id = id;

@@ -111,7 +111,11 @@ export async function startAudit(opts = {}) {
     let pubkey;
     try {
         const dec = nip19.decode(rawNpub);
-        if (dec.type !== 'npub') throw new Error('bad type');
+        if (dec.type !== 'npub') {
+            say(speak('decodeFail'));
+            errBeep();
+            return;
+        }
         pubkey = dec.data;
     } catch {
         say(speak('decodeFail'));
