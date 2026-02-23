@@ -40,7 +40,7 @@ reviews:
         - Error Handling: NEVER throw from module exports — return null, empty, or an error object instead.
         - Async/Pools: Wrap nostr-tools pool subscriptions in `setTimeout` to avoid hanging subscriptions.
         - Naming: Constants in UPPER_SNAKE_CASE. Variables/Functions in camelCase. Booleans must start with `is`, `has`, `should`, or `can`.
-        - CDNs & Resources: Do NOT use external resources or CDNs. Assets should be self-hosted (temporary exception: htmx on unpkg).
+        - CDNs & Resources: Do NOT use external resources or CDNs. Assets should be self-hosted. Exceptions: nostr-tools on esm.sh (https://esm.sh/nostr-tools).
         - Types: No TypeScript. Use JSDoc for function signatures when helpful.
 
         **Code Quality (Non-negotiable):**
@@ -180,112 +180,112 @@ reviews:
     - label: "accessibility"
       instructions: "Apply to PRs that improve or affect accessibility"
 
-# Tools configuration - enable what matters for vanilla JS
-tools:
-  # JavaScript/Web essentials - ENABLED
-  eslint:
-    enabled: true
-  biome:
-    enabled: true
-  htmlhint:
-    enabled: true
-  stylelint:
-    enabled: true
+  # Tools configuration - enable what matters for vanilla JS
+  tools:
+    # JavaScript/Web essentials - ENABLED
+    eslint:
+      enabled: true
+    biome:
+      enabled: true
+    htmlhint:
+      enabled: true
+    stylelint:
+      enabled: true
 
-  # Documentation & text quality
-  markdownlint:
-    enabled: true
-  languagetool:
-    enabled: true
-    level: "picky"  # Maximum grammar pedantry
+    # Documentation & text quality
+    markdownlint:
+      enabled: true
+    languagetool:
+      enabled: true
+      level: "picky"  # Maximum grammar pedantry
 
-  # Security - always important
-  gitleaks:
-    enabled: true
-  trufflehog:
-    enabled: true
-  osvScanner:
-    enabled: true
+    # Security - always important
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    osvScanner:
+      enabled: true
 
-  # DevOps files
-  actionlint:
-    enabled: true
-  yamllint:
-    enabled: true
-  shellcheck:
-    enabled: true
-  dotenvLint:
-    enabled: true
+    # DevOps files
+    actionlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    shellcheck:
+      enabled: true
+    dotenvLint:
+      enabled: true
 
-  # AST-based analysis
-  ast-grep:
-    essential_rules: true
-  semgrep:
-    enabled: true
-  opengrep:
-    enabled: true
+    # AST-based analysis
+    ast-grep:
+      essential_rules: true
+    semgrep:
+      enabled: true
+    opengrep:
+      enabled: true
 
-  # Disable tools for languages we don't use
-  ruff:
-    enabled: false
-  pylint:
-    enabled: false
-  flake8:
-    enabled: false
-  golangci-lint:
-    enabled: false
-  clippy:
-    enabled: false
-  rubocop:
-    enabled: false
-  phpstan:
-    enabled: false
-  phpmd:
-    enabled: false
-  phpcs:
-    enabled: false
-  swiftlint:
-    enabled: false
-  detekt:
-    enabled: false
-  pmd:
-    enabled: false
-  clang:
-    enabled: false
-  cppcheck:
-    enabled: false
-  buf:
-    enabled: false
-  regal:
-    enabled: false
-  sqlfluff:
-    enabled: false
-  tflint:
-    enabled: false
-  checkov:
-    enabled: false
-  hadolint:
-    enabled: false
-  fortitudeLint:
-    enabled: false
-  prismaLint:
-    enabled: false
-  brakeman:
-    enabled: false
-  shopifyThemeCheck:
-    enabled: false
-  luacheck:
-    enabled: false
-  blinter:
-    enabled: false
-  trivy:
-    enabled: false
-  circleci:
-    enabled: false
-  checkmake:
-    enabled: false
-  oxc:
-    enabled: true
+    # Disable tools for languages we don't use
+    ruff:
+      enabled: false
+    pylint:
+      enabled: false
+    flake8:
+      enabled: false
+    golangci-lint:
+      enabled: false
+    clippy:
+      enabled: false
+    rubocop:
+      enabled: false
+    phpstan:
+      enabled: false
+    phpmd:
+      enabled: false
+    phpcs:
+      enabled: false
+    swiftlint:
+      enabled: false
+    detekt:
+      enabled: false
+    pmd:
+      enabled: false
+    clang:
+      enabled: false
+    cppcheck:
+      enabled: false
+    buf:
+      enabled: false
+    regal:
+      enabled: false
+    sqlfluff:
+      enabled: false
+    tflint:
+      enabled: false
+    checkov:
+      enabled: false
+    hadolint:
+      enabled: false
+    fortitudeLint:
+      enabled: false
+    prismaLint:
+      enabled: false
+    brakeman:
+      enabled: false
+    shopifyThemeCheck:
+      enabled: false
+    luacheck:
+      enabled: false
+    blinter:
+      enabled: false
+    trivy:
+      enabled: false
+    circleci:
+      enabled: false
+    checkmake:
+      enabled: false
+    oxc:
+      enabled: true
 
 chat:
   art: true  # ASCII art is peak rabbit culture, you can't stop it

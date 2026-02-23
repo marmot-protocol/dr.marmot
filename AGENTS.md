@@ -56,7 +56,7 @@ import { DEFAULT_RELAYS } from './config.js';
 import { npubInput } from './dom.js';
 ```
 
-- **CDN:** Use `https://esm.sh/nostr-tools` (no package.json dependency)
+- **CDN:** `https://esm.sh/nostr-tools` is the sole approved external CDN for this project (no package.json dependency). All other assets must be self-hosted.
 
 ### Formatting
 

@@ -5,6 +5,9 @@ export function queryRelayForKinds(pool, relayUrl, pubkey, kinds) {
         const results = {};
         for (const k of kinds) results[k] = null;
 
+        let done = false;
+        let timeoutId;
+
         try {
             const sub = pool.subscribeMany([relayUrl], { authors: [pubkey], kinds }, {
                 onevent(ev) {
@@ -13,11 +16,16 @@ export function queryRelayForKinds(pool, relayUrl, pubkey, kinds) {
                     }
                 },
                 oneose() {
+                    if (done) return;
+                    done = true;
+                    clearTimeout(timeoutId);
                     sub.close();
                     resolve(results);
                 },
             });
-            setTimeout(() => {
+            timeoutId = setTimeout(() => {
+                if (done) return;
+                done = true;
                 try {
                     sub.close();
                 } catch (e) {
