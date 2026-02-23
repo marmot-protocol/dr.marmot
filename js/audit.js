@@ -111,11 +111,7 @@ export async function startAudit(opts = {}) {
     let pubkey;
     try {
         const dec = nip19.decode(rawNpub);
-        if (dec.type !== 'npub') {
-            say(speak('decodeFail'));
-            errBeep();
-            return;
-        }
+        if (dec.type !== 'npub') throw new Error('bad type');
         pubkey = dec.data;
     } catch {
         say(speak('decodeFail'));
@@ -161,6 +157,16 @@ export async function startAudit(opts = {}) {
         kpCount: 0,
         kpErrorCount: 0,
         kpNoOverlapWithMain: false,
+        muteListPresent: false,
+        relayDiverges: false,
+        nip65NoRead: false,
+        nip65NoWrite: false,
+        nip65Bloated: false,
+        hasDeprecatedK4: false,
+        hasDeprecatedK2: false,
+        blossomConfigured: false,
+        legacyDmsConfigured: false,
+        hasNip39Identities: false,
     };
 
     setSprite('listening', 'bounce');
@@ -170,7 +176,8 @@ export async function startAudit(opts = {}) {
         setRelayState(r, 'connecting', 'DISCOVER');
     }
 
-    const bootstrapKinds = [0, 3, 10002, 10051];
+    // Bootstrap: fetch profile, relay lists, and all singleton event types
+    const bootstrapKinds = [0, 2, 3, 4, 10002, 10011, 10050, 10051, 10063];
     const bootstrapQueries = DEFAULT_RELAYS.map(async (r) => {
         const res = await queryRelayForKinds(pool, r, pubkey, bootstrapKinds);
         relayData[r] = res;
@@ -222,10 +229,11 @@ export async function startAudit(opts = {}) {
     }
     setScanProgress(20);
 
+    // User relay queries: include mute list, identity, and service events
     const userRelayQueries = toQuery.map(async (r) => {
-        const res = await queryRelayForKinds(pool, r, pubkey, [0, 3, 10051]);
+        const res = await queryRelayForKinds(pool, r, pubkey, [0, 3, 10000, 10011, 10050, 10051, 10063]);
         relayData[r] = res;
-        const hasAny = res[0] || res[3] || res[10051];
+        const hasAny = res[0] || res[3] || res[10050] || res[10051] || res[10063];
         if (!hasAny) setRelayState(r, 'error', 'NO DATA');
         else setRelayState(r, 'ok', 'OK');
     });
@@ -237,13 +245,15 @@ export async function startAudit(opts = {}) {
     setSprite('thinking', 'bounce');
     await say(speak('examiningSync'));
 
-    let maxK0 = 0, maxK3 = 0, max10051 = 0;
+    // Find the latest version of each key event type across investigation relays
+    let maxK0 = 0, maxK3 = 0, max10051 = 0, max10000 = 0;
     let best10051 = null;
     for (const r of relaysToInvestigate) {
         const d = relayData[r];
         if (d) {
             if (d[0]?.created_at > maxK0) maxK0 = d[0].created_at;
             if (d[3]?.created_at > maxK3) maxK3 = d[3].created_at;
+            if (d[10000]?.created_at > max10000) max10000 = d[10000].created_at;
             if (d[10051]?.created_at > max10051) {
                 max10051 = d[10051].created_at;
                 best10051 = d[10051];
@@ -251,6 +261,22 @@ export async function startAudit(opts = {}) {
         }
     }
 
+    // Collect singleton service/identity events from all queried relays (bootstrap + user)
+    let bestK10002 = null, maxK10002 = 0;
+    let best10050 = null, best10063 = null, best10011 = null;
+    let depK4 = null, depK2 = null;
+    for (const r of Object.keys(relayData)) {
+        const d = relayData[r];
+        if (!d) continue;
+        if (d[10002]?.created_at > maxK10002) { maxK10002 = d[10002].created_at; bestK10002 = d[10002]; }
+        if (!best10050 && d[10050]) best10050 = d[10050];
+        if (!best10063 && d[10063]) best10063 = d[10063];
+        if (!best10011 && d[10011]) best10011 = d[10011];
+        if (!depK4 && d[4]) depK4 = d[4];
+        if (!depK2 && d[2]) depK2 = d[2];
+    }
+
+    // ── RELAY SYNC (k0 / k3 / k10000) ───────────────────────────────────
     const cwItems = [];
     let hasCrossed = false;
 
@@ -292,9 +318,24 @@ export async function startAudit(opts = {}) {
         }
     }
 
-    appendResultSection('RELAY SYNC (k0 / k3)', cwItems);
+    if (max10000 > 0) {
+        auditCtx.muteListPresent = true;
+        for (const r of relaysToInvestigate) {
+            const ev = relayData[r]?.[10000];
+            if (!ev) {
+                cwItems.push({ type: 'warn', text: `${shortUrl(r)} — Mute List (k10000) missing` });
+            } else if (ev.created_at < max10000) {
+                cwItems.push({ type: 'warn', text: `${shortUrl(r)} — Mute List (k10000) outdated` });
+            } else {
+                cwItems.push({ type: 'ok', text: `${shortUrl(r)} — Mute List in sync` });
+            }
+        }
+    }
+
+    appendResultSection('RELAY SYNC (k0 / k3 / k10000)', cwItems);
     setScanProgress(65);
 
+    // ── PROFILE VITAL SIGNS ───────────────────────────────────────────────
     setSprite('magnify', 'bounce');
     await say(speak('vitalSigns'));
     const bestK0 = maxK0 ? [...relaysToInvestigate].map(r => relayData[r]?.[0]).find(e => e?.created_at === maxK0) : null;
@@ -325,6 +366,28 @@ export async function startAudit(opts = {}) {
             } else {
                 vitalItems.push({ type: 'warn', text: 'NIP-05: not set (optional, improves identity verification)' });
             }
+
+            // NIP-57 Zap configuration
+            const lud16 = meta?.lud16?.trim() || '';
+            const lud06 = meta?.lud06?.trim() || '';
+            if (lud16) {
+                const lud16Ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(lud16);
+                vitalItems.push({ type: lud16Ok ? 'ok' : 'warn', text: lud16Ok ? `Zap address (lud16): ${lud16}` : `Zap address: "${lud16}" — lud16 format invalid (expected user@domain.tld)` });
+            } else if (lud06) {
+                vitalItems.push({ type: 'ok', text: 'Zap: lud06 LNURL set' });
+            } else {
+                vitalItems.push({ type: 'warn', text: 'Zap: no lud16/lud06 — cannot receive Lightning zaps' });
+            }
+
+            // Insecure profile asset URLs (http:// leaks / mixed content)
+            const picture = meta?.picture?.trim() || '';
+            const banner = meta?.banner?.trim() || '';
+            if (picture.startsWith('http://')) {
+                vitalItems.push({ type: 'warn', text: 'Profile picture uses http:// — blocked as mixed content in most web clients' });
+            }
+            if (banner.startsWith('http://')) {
+                vitalItems.push({ type: 'warn', text: 'Profile banner uses http:// — blocked as mixed content in most web clients' });
+            }
         } catch {
             vitalItems.push({ type: 'warn', text: 'Profile content not valid JSON' });
         }
@@ -347,6 +410,7 @@ export async function startAudit(opts = {}) {
         }
     }
 
+    // ── RELAY RESILIENCE ─────────────────────────────────────────────────
     let relayReachable = 0;
     for (const r of relaysToInvestigate) {
         const d = relayData[r];
@@ -370,6 +434,7 @@ export async function startAudit(opts = {}) {
     }
     appendResultSection('RELAY RESILIENCE', resilienceItems);
 
+    // ── EVENT FRESHNESS ──────────────────────────────────────────────────
     const nowSec = Math.floor(Date.now() / 1000);
     const daysAgo = (ts) => ts ? Math.floor((nowSec - ts) / 86400) : null;
     const freshnessItems = [];
@@ -396,6 +461,7 @@ export async function startAudit(opts = {}) {
         }
     }
 
+    // ── SOCIAL GRAPH ─────────────────────────────────────────────────────
     const bestK3 = maxK3 ? [...relaysToInvestigate].map(r => relayData[r]?.[3]).find(e => e?.created_at === maxK3) : null;
     const followCount = bestK3?.tags?.filter(t => t[0] === 'p' && t[1]).length ?? 0;
     const socialItems = [];
@@ -405,6 +471,7 @@ export async function startAudit(opts = {}) {
     }
     if (socialItems.length > 0) appendResultSection('SOCIAL GRAPH', socialItems);
 
+    // ── CROSSED WIRES ANNOUNCEMENT ───────────────────────────────────────
     if (hasCrossed) {
         const problemRelays = [...new Set(cwItems.filter(i => i.type !== 'ok').map(i => i.text.split(' — ')[0]))];
         auditCtx.hasCrossedWires = true;
@@ -418,6 +485,71 @@ export async function startAudit(opts = {}) {
         okBeep();
     }
 
+    // ── RELAY CONFIGURATION (NIP-65) ─────────────────────────────────────
+    const relayConfigItems = [];
+    let canUnifyRelays = false;
+    const k3RelaySet = new Set();
+    const k10002RelaySet = new Set();
+
+    if (bestK10002) {
+        const k10002Tags = bestK10002.tags.filter(t => t[0] === 'r' && t[1]);
+        // A tag with no marker means both read and write
+        const readRelays = k10002Tags.filter(t => !t[2] || t[2] === 'read');
+        const writeRelays = k10002Tags.filter(t => !t[2] || t[2] === 'write');
+        const totalRelayCount = new Set(k10002Tags.map(t => t[1])).size;
+        if (totalRelayCount === 0) {
+            relayConfigItems.push({ type: 'err', text: 'kind 10002 (NIP-65) has no relay tags' });
+            auditCtx.nip65NoRead = true;
+            auditCtx.nip65NoWrite = true;
+        } else {
+            if (readRelays.length === 0) {
+                relayConfigItems.push({ type: 'err', text: 'NIP-65: no read relays — clients cannot deliver replies or mentions to you' });
+                auditCtx.nip65NoRead = true;
+            } else {
+                relayConfigItems.push({ type: 'ok', text: `NIP-65: ${readRelays.length} read relay(s)` });
+            }
+            if (writeRelays.length === 0) {
+                relayConfigItems.push({ type: 'err', text: 'NIP-65: no write relays — clients cannot publish events on your behalf' });
+                auditCtx.nip65NoWrite = true;
+            } else {
+                relayConfigItems.push({ type: 'ok', text: `NIP-65: ${writeRelays.length} write relay(s)` });
+            }
+            if (totalRelayCount > 10) {
+                relayConfigItems.push({ type: 'warn', text: `NIP-65: ${totalRelayCount} relays listed — aim for ≤ 10; high counts degrade client performance` });
+                auditCtx.nip65Bloated = true;
+            }
+        }
+        for (const t of k10002Tags) {
+            if (t[1] && validateRelayUrl(t[1].trim()).valid) k10002RelaySet.add(t[1].trim().toLowerCase());
+        }
+    } else {
+        relayConfigItems.push({ type: 'warn', text: 'No kind 10002 (NIP-65) Relay List Metadata — some clients may not discover your relays' });
+    }
+
+    if (bestK3?.tags) {
+        for (const t of bestK3.tags) {
+            if (t[0] === 'relay' && t[1] && validateRelayUrl(t[1].trim()).valid) k3RelaySet.add(t[1].trim().toLowerCase());
+        }
+    }
+
+    if (k3RelaySet.size > 0 || k10002RelaySet.size > 0) {
+        const onlyInK3 = [...k3RelaySet].filter(r => !k10002RelaySet.has(r));
+        const onlyInK10002 = [...k10002RelaySet].filter(r => !k3RelaySet.has(r));
+        const overlap = [...k3RelaySet].filter(r => k10002RelaySet.has(r));
+        if (onlyInK3.length === 0 && onlyInK10002.length === 0) {
+            relayConfigItems.push({ type: 'ok', text: `Contacts (k3) and NIP-65 (k10002) relay lists agree` });
+        } else {
+            auditCtx.relayDiverges = true;
+            canUnifyRelays = true;
+            if (onlyInK3.length > 0) relayConfigItems.push({ type: 'warn', text: `${onlyInK3.length} relay(s) only in Contacts (k3), not in NIP-65 (k10002) — client fragmentation risk` });
+            if (onlyInK10002.length > 0) relayConfigItems.push({ type: 'warn', text: `${onlyInK10002.length} relay(s) only in NIP-65 (k10002), not in Contacts (k3) — client fragmentation risk` });
+            if (overlap.length > 0) relayConfigItems.push({ type: 'ok', text: `${overlap.length} relay(s) shared between k3 and k10002` });
+            await say(speak('relayDivergence', { k3Only: onlyInK3.length, k10002Only: onlyInK10002.length }));
+        }
+    }
+    appendResultSection('RELAY CONFIGURATION (NIP-65)', relayConfigItems);
+
+    // ── MARMOT PROTOCOL (MIP-00/01) ──────────────────────────────────────
     setSprite('working', 'bounce');
     await say(speak(auditCtx.hasCrossedWires ? 'marmotPanelSync' : 'marmotPanel'));
 
@@ -497,7 +629,6 @@ export async function startAudit(opts = {}) {
                     setRelayState(r, 'ok', 'KP OK');
                 }
             } catch (e) {
-                console.error('Failed to query KeyPackage relays', e);
                 for (const r of marmotRelays) {
                     setRelayState(r, 'error', 'KP FAIL');
                 }
@@ -644,6 +775,58 @@ export async function startAudit(opts = {}) {
         appendResultSection('KEYPACKAGE VITAL STATS', kpStatsItems);
     }
 
+    // ── SERVICES & IDENTITY ───────────────────────────────────────────────
+    const servicesItems = [];
+
+    if (best10050) {
+        const dmRelayTags = best10050.tags.filter(t => t[0] === 'relay' && t[1]);
+        servicesItems.push({ type: 'ok', text: `NIP-17 DM relay list (k10050): ${dmRelayTags.length} relay(s) configured` });
+        auditCtx.legacyDmsConfigured = true;
+    } else {
+        servicesItems.push({ type: 'warn', text: 'No NIP-17 DM relay list (k10050) — contacts using NIP-17 DMs may not reach you' });
+    }
+
+    if (best10063) {
+        const blossomServerTags = best10063.tags.filter(t => t[0] === 'server' && t[1]);
+        servicesItems.push({ type: 'ok', text: `Blossom server list (k10063): ${blossomServerTags.length} server(s) configured` });
+        auditCtx.blossomConfigured = true;
+    } else {
+        servicesItems.push({ type: 'warn', text: 'No Blossom server list (k10063) — media uploads may fail in Blossom-native clients' });
+    }
+
+    if (best10011) {
+        const identityTags = best10011.tags.filter(t => t[0] === 'i' && t[1]);
+        if (identityTags.length > 0) {
+            auditCtx.hasNip39Identities = true;
+            for (const id of identityTags) {
+                const [platform, handle] = (id[1] || '').split(':', 2);
+                servicesItems.push({ type: 'ok', text: `External identity: ${platform || '?'} — ${handle || '?'}` });
+            }
+        } else {
+            servicesItems.push({ type: 'warn', text: 'NIP-39 event (k10011) found but contains no i-tagged identities' });
+        }
+    } else {
+        servicesItems.push({ type: 'info', text: 'No NIP-39 external identities (k10011) — optional, builds cross-platform trust' });
+    }
+    appendResultSection('SERVICES & IDENTITY', servicesItems);
+
+    // ── DEPRECATION SCAN ─────────────────────────────────────────────────
+    const deprecationItems = [];
+    if (depK4) {
+        const dK4 = Math.floor((nowSec - depK4.created_at) / 86400);
+        deprecationItems.push({ type: 'warn', text: `NIP-04 DMs (kind 4) found — last seen ${dK4 === 0 ? 'today' : `${dK4} day(s) ago`}. NIP-04 is deprecated: leaks metadata. Upgrade to NIP-17 or Marmot` });
+        auditCtx.hasDeprecatedK4 = true;
+    } else {
+        deprecationItems.push({ type: 'ok', text: 'No NIP-04 (kind 4) DMs found — good, NIP-04 is deprecated' });
+    }
+    if (depK2) {
+        deprecationItems.push({ type: 'warn', text: 'Kind 2 (Recommend Relay) event found — deprecated; use kind 10002 (NIP-65) for relay recommendations' });
+        auditCtx.hasDeprecatedK2 = true;
+    } else {
+        deprecationItems.push({ type: 'ok', text: 'No kind 2 (deprecated Relay Recommendation) events found' });
+    }
+    appendResultSection('DEPRECATION SCAN', deprecationItems);
+
     setScanProgress(100);
     removeScanBar();
 
@@ -721,11 +904,6 @@ export async function startAudit(opts = {}) {
             findings.fail.push('kind 10051 contains no relay tags');
         } else {
             findings.pass.push(`${marmotRelays.length} KeyPackage relay(s) advertised`);
-            if (marmotOk) {
-                findings.pass.push('Marmot protocol (MIP-00/01): all checks passed');
-            } else {
-                findings.fail.push('Marmot protocol (MIP-00/01): one or more checks failed');
-            }
         }
     }
 
@@ -736,6 +914,16 @@ export async function startAudit(opts = {}) {
         if (item.type === 'ok' && item.text.includes('All KeyPackages pass')) findings.pass.push(item.text);
         if (item.type === 'warn') findings.warn.push(item.text);
     }
+
+    // New check findings
+    if (auditCtx.nip65NoRead) findings.fail.push('NIP-65: no read relays in kind 10002');
+    if (auditCtx.nip65NoWrite) findings.fail.push('NIP-65: no write relays in kind 10002');
+    if (auditCtx.nip65Bloated) findings.warn.push('NIP-65: excessive relay count in kind 10002 (> 10)');
+    if (auditCtx.relayDiverges) findings.warn.push('Relay lists diverge: k3 and k10002 advertise different relays');
+    if (!auditCtx.legacyDmsConfigured) findings.warn.push('No NIP-17 DM inbox relay list (k10050)');
+    if (!auditCtx.blossomConfigured) findings.warn.push('No Blossom media server list (k10063)');
+    if (auditCtx.hasDeprecatedK4) findings.warn.push('Uses deprecated NIP-04 (kind 4) DMs — leaks metadata');
+    if (auditCtx.hasDeprecatedK2) findings.warn.push('Uses deprecated kind 2 relay recommendations');
 
     const hasFailures = findings.fail.length > 0;
     const hasWarnings = findings.warn.length > 0;
@@ -821,6 +1009,32 @@ export async function startAudit(opts = {}) {
     if (best10051 && marmotRelays.length > 0) {
         prescriptions.push('MIP-00: Rotate MLS signing keys periodically within groups; ensure your client supports this');
     }
+    // New prescriptions from extended checks
+    if (auditCtx.relayDiverges) {
+        prescriptions.push('Unify your k3 and k10002 relay lists — both should advertise the same set of relays');
+    }
+    if (auditCtx.nip65NoRead) {
+        prescriptions.push('Add at least one read relay to kind 10002 (NIP-65) — clients need it to deliver replies to you');
+    }
+    if (auditCtx.nip65NoWrite) {
+        prescriptions.push('Add at least one write relay to kind 10002 (NIP-65) — clients need it to publish on your behalf');
+    }
+    if (auditCtx.nip65Bloated) {
+        prescriptions.push('Reduce kind 10002 (NIP-65) to 10 or fewer relays for better client performance');
+    }
+    if (!auditCtx.legacyDmsConfigured) {
+        prescriptions.push('Publish a DM inbox relay list (kind 10050) to receive NIP-17 encrypted messages');
+    }
+    if (!auditCtx.blossomConfigured) {
+        prescriptions.push('Publish a Blossom server list (kind 10063) so clients know where to upload your media');
+    }
+    if (auditCtx.hasDeprecatedK4) {
+        prescriptions.push('Migrate from NIP-04 (kind 4) to NIP-17 or Marmot — NIP-04 leaks message metadata');
+    }
+    if (auditCtx.hasDeprecatedK2) {
+        prescriptions.push('Stop publishing kind 2 (Recommend Relay) events — use kind 10002 (NIP-65) instead');
+    }
+
     const uniqueRx = [...new Set(prescriptions)].sort((a, b) => prescriptionPriority(a) - prescriptionPriority(b));
 
     const canRebroadcast = (staleRelays > 0 || missingRelays > 0) && (bestK0 || bestK3);
@@ -829,12 +1043,18 @@ export async function startAudit(opts = {}) {
     lastAuditState = {
         bestK0,
         bestK3,
+        bestK10002,
+        best10050,
+        best10063,
         relaysToInvestigate: [...relaysToInvestigate],
         marmotRelays: [...marmotRelays],
         kpEventsCollected: [...kpEventsCollected],
         missingITagIds: [...missingITagIds],
         fromNip07,
         pubkey,
+        k3RelaySet: [...k3RelaySet],
+        k10002RelaySet: [...k10002RelaySet],
+        canUnifyRelays,
     };
 
     const hpTotal = findings.pass.length + findings.warn.length + findings.fail.length;
@@ -901,6 +1121,7 @@ export async function startAudit(opts = {}) {
         for (const rx of uniqueRx) {
             const isRebroadcast = rx.toLowerCase().includes('rebroadcast') && rx.toLowerCase().includes('profile');
             const isDeleteKp = rx.toLowerCase().includes('delete events') && rx.toLowerCase().includes('keypackage');
+            const isUnifyRelays = rx.toLowerCase().includes('unify your k3 and k10002');
             cardHTML += `<div class="rx-row">`;
             cardHTML += `<span class="rx-text">${rx}</span>`;
             if (isRebroadcast && canRebroadcast) {
@@ -908,6 +1129,9 @@ export async function startAudit(opts = {}) {
             } else if (isDeleteKp && canDeleteKps) {
                 const disabled = !window.nostr ? ' disabled title="Requires NIP-07 extension"' : '';
                 cardHTML += `<button class="rx-action-btn rx-action-delete" data-action="delete-kps"${disabled}>DELETE KPs</button>`;
+            } else if (isUnifyRelays && canUnifyRelays) {
+                const disabled = !window.nostr ? ' disabled title="Requires NIP-07 extension"' : '';
+                cardHTML += `<button class="rx-action-btn" data-action="unify-relays"${disabled}>UNIFY RELAYS</button>`;
             }
             cardHTML += `</div>`;
         }
@@ -926,6 +1150,7 @@ export async function startAudit(opts = {}) {
 
     const rebroadcastBtn = chartEl.querySelector('[data-action="rebroadcast"]');
     const deleteKpBtn = chartEl.querySelector('[data-action="delete-kps"]');
+    const unifyRelaysBtn = chartEl.querySelector('[data-action="unify-relays"]');
     if (rebroadcastBtn) {
         rebroadcastBtn.addEventListener('click', async () => {
             const { rebroadcastProfileAndContacts } = await import('./actions.js');
@@ -948,9 +1173,19 @@ export async function startAudit(opts = {}) {
             deleteKpBtn.textContent = 'DONE';
         });
     }
+    if (unifyRelaysBtn) {
+        unifyRelaysBtn.addEventListener('click', async () => {
+            const { unifyRelayLists } = await import('./actions.js');
+            unifyRelaysBtn.disabled = true;
+            unifyRelaysBtn.classList.add('working');
+            unifyRelaysBtn.textContent = 'WORKING…';
+            await unifyRelayLists();
+            unifyRelaysBtn.classList.remove('working');
+            unifyRelaysBtn.textContent = 'DONE';
+        });
+    }
 
     relayList.scrollTop = relayList.scrollHeight;
-    nextBtn.classList.remove('hidden');
 
     if (allOk) {
         setSprite('success', 'success');
@@ -980,5 +1215,6 @@ export async function startAudit(opts = {}) {
     setOnAllDone(() => {
         auditBtn.disabled = false;
         nip07Btn.disabled = false;
+        nextBtn.classList.remove('hidden');
     });
 }
