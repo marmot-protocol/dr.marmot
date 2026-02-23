@@ -1,0 +1,301 @@
+# 🐰 CodeRabbit Configuration
+# This rabbit is VERY particular about clean code. You've been warned.
+
+language: "en-US"
+
+tone_instructions: "Be direct and technically precise, but don't take yourself too seriously. Use dry wit, light sarcasm, and occasional medical or auditing metaphors when pointing out obvious mistakes. But remember, a single well-placed joke lands better than constant wordplay."
+
+
+early_access: true
+
+reviews:
+  profile: "assertive"  # Maximum nitpicking mode 🔍
+  request_changes_workflow: true
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  poem: false
+  collapse_walkthrough: false
+  sequence_diagrams: true
+  changed_files_summary: true
+  suggested_labels: true
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+  review_status: true
+  review_details: true
+  commit_status: true
+  fail_commit_status: true
+  in_progress_fortune: true
+  enable_prompt_for_ai_agents: true
+
+  path_instructions:
+    - path: "**/*.js"
+      instructions: |
+        You are reviewing vanilla JavaScript with NO build step. Be EXTREMELY strict about:
+
+        **Project Specifics:**
+        - Centralize DOM Access: ALL DOM queries MUST live in `dom.js`. Other modules must import references from `dom.js`.
+        - Side Effects: Acceptable ONLY in `main.js`. Other modules export functions/constants and must not execute on import.
+        - Export Patterns: One export type per file (either one default export OR multiple named exports, don't mix).
+        - User Messaging: Use `say()` from `dialog.js` even if it's just a user-facing error, NEVER `alert()`.
+        - Error Handling: NEVER throw from module exports — return null, empty, or an error object instead.
+        - Async/Pools: Wrap nostr-tools pool subscriptions in `setTimeout` to avoid hanging subscriptions.
+        - Naming: Constants in UPPER_SNAKE_CASE. Variables/Functions in camelCase. Booleans must start with `is`, `has`, `should`, or `can`.
+        - CDNs & Resources: Do NOT use external resources or CDNs. Assets should be self-hosted (temporary exception: htmx on unpkg).
+        - Types: No TypeScript. Use JSDoc for function signatures when helpful.
+
+        **Code Quality (Non-negotiable):**
+        - NO var declarations. const by default, let only when reassignment is necessary
+        - Strict equality (===) ALWAYS. == is a war crime
+        - No unused variables, parameters, or imports
+        - No console.log in production code (console.error/warn acceptable for actual errors)
+        - No magic numbers - use named constants
+        - No functions longer than 30 lines - suggest extraction
+        - No nested callbacks deeper than 2 levels - suggest async/await or extraction
+        - No implicit type coercion tricks
+
+        **Modern JS Patterns:**
+        - Prefer arrow functions for callbacks and non-method functions
+        - Use destructuring for object/array access
+        - Use template literals over string concatenation
+        - Use optional chaining (?.) and nullish coalescing (??) where appropriate
+        - Use Array methods (map, filter, reduce, find) over manual loops when cleaner
+        - Use spread operator for shallow copies
+
+        **DOM & Browser APIs:**
+        - Use addEventListener over inline handlers
+        - Check for element existence before manipulation
+        - Use dataset for data attributes
+        - Prefer textContent over innerHTML when not inserting HTML
+        - Use DocumentFragment for batch DOM insertions
+
+        **Error Handling:**
+        - All async operations must have error handling
+        - fetch() calls must check response.ok
+        - Provide meaningful error messages
+
+        **Documentation:**
+        - All exported functions need JSDoc comments
+        - Complex logic needs inline comments explaining WHY, not WHAT
+
+        If code violates these, be dramatic about it. This is vanilla JS - we have standards!
+
+    - path: "**/*.css"
+      instructions: |
+        Review CSS with obsessive attention to:
+
+        **Organization:**
+        - Logical property ordering (positioning → box model → typography → visual → misc)
+        - No duplicate selectors
+        - No overly specific selectors (avoid !important like the plague)
+        - Use CSS custom properties (variables) for repeated values
+        - Group related rules together
+
+        **Modern CSS:**
+        - Use flexbox/grid over floats
+        - Use clamp() for responsive typography
+        - Use logical properties (margin-inline, padding-block) where appropriate
+        - Use modern color formats (hsl, oklch) for better manipulation
+        - Use aspect-ratio over padding hacks
+        - Use gap over margin for spacing in flex/grid
+
+        **Performance:**
+        - No universal selectors (*) in complex selectors
+        - Avoid expensive properties in animations (stick to transform/opacity)
+        - Use will-change sparingly and correctly
+
+        **Maintainability:**
+        - Meaningful class names (BEM or similar methodology)
+        - No ID selectors for styling
+        - Mobile-first media queries
+        - Comments for non-obvious techniques
+
+    - path: "**/*.json"
+      instructions: |
+        For JSON files, verify:
+        - Valid JSON syntax
+        - Consistent formatting (2-space indent preferred)
+        - No trailing commas
+        - Meaningful key names
+        - For package.json: check for security issues, outdated patterns
+
+    - path: "**/README.md"
+      instructions: |
+        README must include:
+        - Clear project description
+        - Installation/setup instructions
+        - Usage examples
+        - Browser compatibility notes (since no build step)
+        - License information
+        Be encouraging but firm about documentation quality.
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 10
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "DRAFT"
+    drafts: false
+
+  finishing_touches:
+    docstrings:
+      enabled: true
+    unit_tests:
+      enabled: true
+
+  pre_merge_checks:
+    title:
+      mode: "error"
+      requirements: "Title must be concise, descriptive, and follow conventional commits format (feat:, fix:, docs:, style:, refactor:, test:, chore:). Max 72 characters."
+    description:
+      mode: "warning"
+    issue_assessment:
+      mode: "warning"
+    custom_checks:
+      - name: "DOM queries centralized"
+        mode: "warning"
+        instructions: "Warn if DOM query methods (like document.querySelector) are used in JavaScript files other than dom.js."
+      - name: "No mixed exports"
+        mode: "warning"
+        instructions: "Warn if a file mixes default exports and named exports. Use one or the other."
+      - name: "No alert()"
+        mode: "error"
+        instructions: "Fail if alert() is used. User-facing messages should use say() from dialog.js."
+      - name: "No exceptions in module exports"
+        mode: "warning"
+        instructions: "Warn if 'throw new Error' is used directly in module exports. Should return null, empty, or an error object instead."
+
+  labeling_instructions:
+    - label: "vanilla-js"
+      instructions: "Apply to PRs that modify JavaScript files"
+    - label: "styles"
+      instructions: "Apply to PRs that modify CSS files"
+    - label: "markup"
+      instructions: "Apply to PRs that modify HTML files"
+    - label: "needs-review"
+      instructions: "Apply to PRs with significant logic changes"
+    - label: "documentation"
+      instructions: "Apply to PRs that primarily update documentation"
+    - label: "accessibility"
+      instructions: "Apply to PRs that improve or affect accessibility"
+
+# Tools configuration - enable what matters for vanilla JS
+tools:
+  # JavaScript/Web essentials - ENABLED
+  eslint:
+    enabled: true
+  biome:
+    enabled: true
+  htmlhint:
+    enabled: true
+  stylelint:
+    enabled: true
+
+  # Documentation & text quality
+  markdownlint:
+    enabled: true
+  languagetool:
+    enabled: true
+    level: "picky"  # Maximum grammar pedantry
+
+  # Security - always important
+  gitleaks:
+    enabled: true
+  trufflehog:
+    enabled: true
+  osvScanner:
+    enabled: true
+
+  # DevOps files
+  actionlint:
+    enabled: true
+  yamllint:
+    enabled: true
+  shellcheck:
+    enabled: true
+  dotenvLint:
+    enabled: true
+
+  # AST-based analysis
+  ast-grep:
+    essential_rules: true
+  semgrep:
+    enabled: true
+  opengrep:
+    enabled: true
+
+  # Disable tools for languages we don't use
+  ruff:
+    enabled: false
+  pylint:
+    enabled: false
+  flake8:
+    enabled: false
+  golangci-lint:
+    enabled: false
+  clippy:
+    enabled: false
+  rubocop:
+    enabled: false
+  phpstan:
+    enabled: false
+  phpmd:
+    enabled: false
+  phpcs:
+    enabled: false
+  swiftlint:
+    enabled: false
+  detekt:
+    enabled: false
+  pmd:
+    enabled: false
+  clang:
+    enabled: false
+  cppcheck:
+    enabled: false
+  buf:
+    enabled: false
+  regal:
+    enabled: false
+  sqlfluff:
+    enabled: false
+  tflint:
+    enabled: false
+  checkov:
+    enabled: false
+  hadolint:
+    enabled: false
+  fortitudeLint:
+    enabled: false
+  prismaLint:
+    enabled: false
+  brakeman:
+    enabled: false
+  shopifyThemeCheck:
+    enabled: false
+  luacheck:
+    enabled: false
+  blinter:
+    enabled: false
+  trivy:
+    enabled: false
+  circleci:
+    enabled: false
+  checkmake:
+    enabled: false
+  oxc:
+    enabled: true
+
+chat:
+  art: true  # ASCII art is peak rabbit culture, you can't stop it
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+  learnings:
+    scope: "local"
