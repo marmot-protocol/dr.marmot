@@ -71,9 +71,11 @@ const LINES = {
         noNip07ForAction: "This action requires a <span class='hi'>NIP-07 extension</span> to sign events. Install nos2x, Alby, or similar.",
         noAuditData: "No audit data available. Run a diagnostic first.",
         nextPatient: "Next patient, please! Enter an npub or use NIP-07 and I'll run a full diagnostic.",
-        relayDivergence: "<span class='warn'>Relay divergence detected.</span> {k3Only} relay(s) only in Contacts (k3), {k10002Only} only in NIP-65 (k10002). Different clients will see different relay lists — unify them.",
+        relayDivergence: "<span class='warn'>Relay divergence detected.</span> {k3Only} relay(s) only in Contacts (k3), "
+            + "{k10002Only} only in NIP-65 (k10002). Different clients will see different relay lists — unify them.",
         unifyRelaysStart: "Merging your k3 and k10002 relay lists into a single unified set and broadcasting to all relays...",
-        unifyRelaysDone: "<span class='ok'>Relay lists unified.</span> {count} relay(s) now carry a consistent k3 and k10002 with {total} relay(s) each.",
+        unifyRelaysDone: "<span class='ok'>Relay lists unified.</span> {count} relay(s) now carry a consistent k3 and k10002 "
+            + "with {total} relay(s) each.",
     },
     sunny: {
         intro: "Hi!! I'm Sunny! 🌞 Paste an npub and I'll check everything — relays, sync, Marmot stuff, the works! Let's go!!",
@@ -345,9 +347,11 @@ const LINES = {
         deleteKpFail: "<span class='err'>Failed.</span> Extension declined. Even your browser doesn't trust you.",
         noNip07ForAction: "Need NIP-07 for this. Install an extension. I'll wait. *pops vicodin*",
         nextPatient: "Next patient. Because apparently one isn't enough suffering for today. *limps to whiteboard*",
-        relayDivergence: "<span class='warn'>Relay divergence. Shocking.</span> {k3Only} relay(s) only in k3, {k10002Only} only in k10002. Your clients are picking different relay sets. Classic. Unify them.",
+        relayDivergence: "<span class='warn'>Relay divergence. Shocking.</span> {k3Only} relay(s) only in k3, "
+            + "{k10002Only} only in k10002. Your clients are picking different relay sets. Classic. Unify them.",
         unifyRelaysStart: "Merging your relay lists. Try not to screw it up. *signs NIP-07 request*",
-        unifyRelaysDone: "<span class='ok'>Done.</span> {count} relay(s) updated. k3 and k10002 now agree on {total} relay(s). First time for everything.",
+        unifyRelaysDone: "<span class='ok'>Done.</span> {count} relay(s) updated. k3 and k10002 now agree on {total} relay(s). "
+            + "First time for everything.",
     },
 };
 

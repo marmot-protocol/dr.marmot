@@ -512,11 +512,11 @@ body {
 .relay-dot {
     width: 1.125ch;
     height: 1.125ch;
+    border: 0.125ch solid #050510;
     border-radius: 50%;
     background: var(--c-dim);
-    transition: background 0.25s, box-shadow 0.25s;
-    border: 0.125ch solid #050510;
     box-shadow: inset 0 0.125ch 0.25ch rgba(255, 255, 255, 0.2), inset 0 -0.125ch 0.25ch rgba(0, 0, 0, 0.5);
+    transition: background 0.25s, box-shadow 0.25s;
 }
 
 .relay-name {
