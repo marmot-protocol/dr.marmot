@@ -2,15 +2,7 @@
  * Services (k10050, k10063, k10011) and deprecation (k4, k2) scan.
  */
 
-function escapeHtml(s) {
-    if (typeof s !== 'string') return '';
-    return s
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+import { escapeHtml } from '../html.js';
 
 /**
  * @param {Object|null} best10050
@@ -91,13 +83,20 @@ export function buildDeprecationItems(depK4, depK2, nowSec, auditCtx) {
     const deprecationItems = [];
     if (depK4) {
         const dK4 = Math.floor((nowSec - depK4.created_at) / 86400);
-        deprecationItems.push({ type: 'warn', text: `NIP-04 DMs (kind 4) found — last seen ${dK4 === 0 ? 'today' : `${dK4} day(s) ago`}. NIP-04 is deprecated: leaks metadata. Upgrade to NIP-17 or Marmot` });
+        const dK4When = dK4 === 0 ? 'today' : `${dK4} day(s) ago`;
+        deprecationItems.push({
+            type: 'warn',
+            text: `NIP-04 DMs (kind 4) found — last seen ${dK4When}. NIP-04 is deprecated: leaks metadata. Upgrade to NIP-17 or Marmot`,
+        });
         auditCtx.hasDeprecatedK4 = true;
     } else {
         deprecationItems.push({ type: 'ok', text: 'No NIP-04 (kind 4) DMs found — good, NIP-04 is deprecated' });
     }
     if (depK2) {
-        deprecationItems.push({ type: 'warn', text: 'Kind 2 (Recommend Relay) event found — deprecated; use kind 10002 (NIP-65) for relay recommendations' });
+        deprecationItems.push({
+            type: 'warn',
+            text: 'Kind 2 (Recommend Relay) event found — deprecated; use kind 10002 (NIP-65) for relay recommendations',
+        });
         auditCtx.hasDeprecatedK2 = true;
     } else {
         deprecationItems.push({ type: 'ok', text: 'No kind 2 (deprecated Relay Recommendation) events found' });

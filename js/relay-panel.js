@@ -1,13 +1,12 @@
 import { relayList, gameWrap, getRelayRow } from './dom.js';
 import { scanBeep } from './audio.js';
-import { html } from './html.js';
+import { html, escapeHtml } from './html.js';
+import { shortUrl } from './relay-validation.js';
+
+export { shortUrl };
 
 export function urlToId(url) {
     return url.replace(/[^a-z0-9]/gi, '_');
-}
-
-export function shortUrl(url) {
-    return url.replace(/^wss?:\/\//, '').replace(/\/$/, '');
 }
 
 export function clearRelayPanel() {
@@ -21,9 +20,10 @@ export function setRelayState(url, state, statusText) {
         row = document.createElement('div');
         row.id = id;
         row.className = 'relay-row';
+        // shortUrl(url) is escaped before injection — relay URLs are untrusted input.
         row.innerHTML = html`
             <div class="relay-dot"></div>
-            <div class="relay-name">${shortUrl(url)}</div>
+            <div class="relay-name">${escapeHtml(shortUrl(url))}</div>
             <div class="relay-status">IDLE</div>
         `;
         relayList.appendChild(row);
@@ -33,6 +33,16 @@ export function setRelayState(url, state, statusText) {
     scanBeep();
 }
 
+/**
+ * Renders a labelled section of audit result rows into the relay list panel.
+ *
+ * Audit item contract: `text` is treated as pre-formatted HTML (may contain
+ * `<span>` tags for colour/emphasis such as `<span class="ok">…</span>`).
+ * Callers are responsible for escaping any untrusted content before it reaches
+ * `text`. Use {@link escapeHtml} from html.js for any relay URLs or external
+ * strings that flow into these messages — do NOT pass raw untrusted values
+ * through `text` without escaping first.
+ */
 export function appendResultSection(title, items) {
     const sec = document.createElement('div');
     sec.className = 'result-section';

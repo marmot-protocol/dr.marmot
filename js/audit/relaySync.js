@@ -2,7 +2,7 @@
  * Relay sync assessment — k0/k3/k10000 cross-relay consistency, best events collection.
  */
 
-import { shortUrl } from '../relay-panel.js';
+import { shortUrl } from '../relay-validation.js';
 
 /**
  * @param {string[]} relaysToInvestigate

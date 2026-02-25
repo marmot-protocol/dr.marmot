@@ -9,6 +9,10 @@ const FAILURE_CATEGORIES = {
     'keypackage': ['KeyPackage', 'KP ', 'kind 443', 'encoding', '0xf2ee', '0x000a', 'mls_', 'relays tag'],
 };
 
+/**
+ * @param {string[]} failures - Array of failure message strings
+ * @returns {string[]} Deduplicated list of category keys (e.g. 'relay-config', 'sync', 'marmot-foundation', 'keypackage')
+ */
 export function categorizeFailures(failures) {
     const cats = new Set();
     for (const f of failures) {
@@ -26,6 +30,10 @@ export function categorizeFailures(failures) {
     return [...cats];
 }
 
+/**
+ * @param {string} text - Prescription message text
+ * @returns {number} Sort priority (lower = higher priority)
+ */
 export function prescriptionPriority(text) {
     const t = (text || '').toLowerCase();
     if (t.includes('invalid relay') && t.includes('k3 / k10002')) return 1;
@@ -35,6 +43,10 @@ export function prescriptionPriority(text) {
     return 5;
 }
 
+/**
+ * @param {{ invalidRelayCount: number, has10051: boolean, kpCount: number, marmotRelayCount: number, hasCrossedWires: boolean }} ctx
+ * @returns {string|null} A root-cause hint sentence, or null if none applies
+ */
 export function getRootCauseHint(ctx) {
     if (ctx.invalidRelayCount > 0) return 'Invalid URLs break relay discovery — fix those before anything else.';
     if (!ctx.has10051 && (ctx.kpCount === 0 || ctx.marmotRelayCount === 0)) return "Without kind 10051, KeyPackages can't be advertised — publish that first.";
@@ -42,6 +54,12 @@ export function getRootCauseHint(ctx) {
     return null;
 }
 
+/**
+ * @param {{ invalidRelayCount: number, has10051: boolean, kpCount: number, marmotRelayCount: number, hasCrossedWires: boolean }} ctx
+ * @param {string[]} failures - Array of failure message strings
+ * @param {string[]} categories - Output of categorizeFailures(failures)
+ * @returns {string} A closing message sentence for the diagnosis
+ */
 export function pickClosingMessage(ctx, failures, categories) {
     if (categories.includes('relay-config') && !categories.includes('sync') && !categories.includes('marmot-foundation') && !categories.includes('keypackage')) {
         return 'Invalid relay URLs in your metadata. Fix those first; other checks depend on valid relays. See prescription.';
@@ -64,6 +82,13 @@ export function pickClosingMessage(ctx, failures, categories) {
     return topFail.length > 70 ? topFail.slice(0, 67) + '…' : topFail;
 }
 
+/**
+ * @param {string[]} relaysToInvestigate
+ * @param {Record<string, any>} relayData
+ * @param {number} maxK0 - Timestamp of the newest kind 0 event across all relays
+ * @param {number} maxK3 - Timestamp of the newest kind 3 event across all relays
+ * @returns {{ syncedRelays: number, staleRelays: number, missingRelays: number, totalRelays: number }}
+ */
 export function tallyRelaySync(relaysToInvestigate, relayData, maxK0, maxK3) {
     let syncedRelays = 0;
     let staleRelays = 0;
@@ -86,6 +111,10 @@ export function tallyRelaySync(relaysToInvestigate, relayData, maxK0, maxK3) {
     return { syncedRelays, staleRelays, missingRelays, totalRelays };
 }
 
+/**
+ * @param {{ fail: any[], warn: any[], pass: any[] }} findings
+ * @returns {{ verdictClass: string, verdictIcon: string, verdictLabel: string, hasFailures: boolean, hasWarnings: boolean, allOk: boolean }}
+ */
 export function determineVerdict(findings) {
     const hasFailures = findings.fail.length > 0;
     const hasWarnings = findings.warn.length > 0;
@@ -128,9 +157,6 @@ export function generateFindings(params, auditCtx) {
         maxK0,
         maxK3,
         totalRelays,
-        syncedRelays,
-        staleRelays,
-        missingRelays,
         relaysToInvestigate,
         relayData,
         best10051,
@@ -151,11 +177,20 @@ export function generateFindings(params, auditCtx) {
 
     if (maxK0 === 0) {
         findings.fail.push('Profile (kind 0) not found on any relay');
-    } else if (syncedRelays === totalRelays) {
-        findings.pass.push(`Profile (kind 0) in sync across all ${totalRelays} relay(s)`);
     } else {
-        if (staleRelays > 0) findings.warn.push(`Profile (kind 0) outdated on ${staleRelays} relay(s)`);
-        if (missingRelays > 0) findings.warn.push(`Profile (kind 0) missing from ${missingRelays} relay(s)`);
+        let k0stale = 0;
+        let k0miss = 0;
+        for (const relay of relaysToInvestigate) {
+            const event = relayData[relay]?.[0];
+            if (!event) k0miss++;
+            else if (event.created_at < maxK0) k0stale++;
+        }
+        if (k0stale === 0 && k0miss === 0) {
+            findings.pass.push(`Profile (kind 0) in sync across all ${totalRelays} relay(s)`);
+        } else {
+            if (k0stale > 0) findings.warn.push(`Profile (kind 0) outdated on ${k0stale} relay(s)`);
+            if (k0miss > 0) findings.warn.push(`Profile (kind 0) missing from ${k0miss} relay(s)`);
+        }
     }
 
     if (maxK3 === 0) {
@@ -435,7 +470,7 @@ export function compileFindingsAndPrescriptions(params) {
         invalidMarmot,
     );
     const { prescriptions: uniqueRx, canDeleteKps } = rxResult;
-    const canRebroadcast = rxResult.canRebroadcast && (bestK0 || bestK3);
+    const canRebroadcast = Boolean(rxResult.canRebroadcast) && !!(bestK0 || bestK3);
 
     const lastAuditState = {
         bestK0,

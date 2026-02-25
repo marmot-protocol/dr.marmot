@@ -90,17 +90,16 @@ function validateSingleKeyPackage(kp, marmotRelaySet) {
     if (!rel || rel.length < 2) {
         errs.push('missing relays tag');
     } else {
+        const validatedRelays = [];
         for (let i = 1; i < rel.length; i++) {
-            const relayValidation = validateRelayUrl(rel[i]);
-            if (!relayValidation.valid) errs.push(`relays[${i}] invalid: ${relayValidation.reason}`);
+            const raw = rel[i];
+            const trimmedLower = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+            const validation = validateRelayUrl(raw);
+            validatedRelays.push({ raw, trimmedLower, valid: validation.valid, reason: validation.reason });
+            if (!validation.valid) errs.push(`relays[${i}] invalid: ${validation.reason}`);
         }
-        let hasOverlap = false;
-        for (let i = 1; i < rel.length; i++) {
-            if (validateRelayUrl(rel[i]).valid && marmotRelaySet.has(rel[i].trim().toLowerCase())) {
-                hasOverlap = true;
-                break;
-            }
-        }
+        const hasOverlap = marmotRelaySet.size > 0
+            && validatedRelays.some(v => v.valid && marmotRelaySet.has(v.trimmedLower));
         if (!hasOverlap && marmotRelaySet.size > 0) errs.push('relays tag has no overlap with kind 10051');
     }
 
@@ -115,9 +114,9 @@ function validateSingleKeyPackage(kp, marmotRelaySet) {
         }
     }
 
-    const okClientFlag = !!tags.find(t => t[0] === 'client' && t[1]);
+    const hasClientTag = tags.some(t => Array.isArray(t) && t[0] === 'client' && t[1]);
     const shortId = `${kp.id.slice(0, 8)}…`;
-    return { errs, okClientFlag, shortId };
+    return { errs, hasClientTag, shortId };
 }
 
 function aggregateKpErrors(mipItems, auditCtx) {
@@ -171,13 +170,9 @@ export async function evaluateMarmot(pool, best10051, relaysToInvestigate, relay
     }
 
     const parsed = parse10051Relays(best10051, auditCtx, mipItems);
-    const { rawMarmotRelays } = parsed;
     marmotRelays = parsed.marmotRelays;
     invalidMarmot = parsed.invalidMarmot;
 
-    if (marmotRelays.length === 0 && rawMarmotRelays.length > 0) {
-        return { mipItems, marmotRelays, kpEventsCollected, invalidMarmot, relayStateUpdates, kpErrorHint };
-    }
     if (marmotRelays.length === 0) {
         return { mipItems, marmotRelays, kpEventsCollected, invalidMarmot, relayStateUpdates, kpErrorHint };
     }
@@ -185,8 +180,18 @@ export async function evaluateMarmot(pool, best10051, relaysToInvestigate, relay
     const mainRelaySet = new Set();
     for (const r of relaysToInvestigate) {
         const d = relayData[r];
-        if (d?.[3]?.tags) for (const t of d[3].tags || []) if (t[0] === 'relay' && t[1] && validateRelayUrl(t[1].trim()).valid) mainRelaySet.add(t[1].trim().toLowerCase());
-        if (d?.[10002]?.tags) for (const t of d[10002].tags || []) if (t[0] === 'r' && t[1] && validateRelayUrl(t[1].trim()).valid) mainRelaySet.add(t[1].trim().toLowerCase());
+        const k3Tags = Array.isArray(d?.[3]?.tags) ? d[3].tags : [];
+        for (const t of k3Tags) {
+            if (!Array.isArray(t) || t[0] !== 'relay' || !t[1]) continue;
+            const raw = t[1].trim();
+            if (validateRelayUrl(raw).valid) mainRelaySet.add(raw.toLowerCase());
+        }
+        const k10002Tags = Array.isArray(d?.[10002]?.tags) ? d[10002].tags : [];
+        for (const t of k10002Tags) {
+            if (!Array.isArray(t) || t[0] !== 'r' || !t[1]) continue;
+            const raw = t[1].trim();
+            if (validateRelayUrl(raw).valid) mainRelaySet.add(raw.toLowerCase());
+        }
     }
     if (mainRelaySet.size > 0) {
         const hasOverlap = marmotRelays.some(u => mainRelaySet.has(u.trim().toLowerCase()));
@@ -241,14 +246,14 @@ export async function evaluateMarmot(pool, best10051, relaysToInvestigate, relay
     let kpsWithoutClient = 0;
 
     for (const kp of kpEvents) {
-        const { errs, okClientFlag, shortId } = validateSingleKeyPackage(kp, marmotRelaySet);
+        const { errs, hasClientTag, shortId } = validateSingleKeyPackage(kp, marmotRelaySet);
 
         if (errs.length > 0) {
             for (const e of errs) {
                 mipItems.push({ type: 'err', text: `KP ${shortId} — ${e}`, kpId: kp.id });
             }
         } else {
-            if (!okClientFlag) kpsWithoutClient++;
+            if (!hasClientTag) kpsWithoutClient++;
             mipItems.push({ type: 'ok', text: `KP ${shortId} — all tags valid` });
         }
     }

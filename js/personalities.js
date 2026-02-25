@@ -120,6 +120,11 @@ const LINES = {
         deleteKpFail: "<span class='err'>Delete failed</span> — extension said no or relay error.",
         noNip07ForAction: "Need a <span class='hi'>NIP-07 extension</span> for this! Install one first!",
         nextPatient: "Next patient! Let's go!! Paste an npub or use NIP-07!",
+        relayDivergence: "<span class='warn'>Relay lists don't match!!</span> {k3Only} relay(s) only in k3, "
+            + "{k10002Only} only in k10002. Different clients see different relays — let's unify them!",
+        unifyRelaysStart: "Merging your k3 and k10002 relay lists into one and broadcasting to all relays!!",
+        unifyRelaysDone: "<span class='ok'>All unified!!</span> {count} relay(s) updated with a consistent "
+            + "list of {total} relay(s)! ✨",
     },
     bubbly: {
         /* inherits from sunny */
@@ -218,6 +223,11 @@ const LINES = {
         deleteKpFail: "<span class='err'>Zap failed</span> — extension or relay error.",
         noNip07ForAction: "Need <span class='hi'>NIP-07</span> for this — install an extension!",
         nextPatient: "Next! Give me another npub!",
+        relayDivergence: "<span class='warn'>Relay divergence!</span> {k3Only} relay(s) only in k3, "
+            + "{k10002Only} only in k10002. Unify them!",
+        unifyRelaysStart: "Merging k3 and k10002 relay lists and broadcasting!",
+        unifyRelaysDone: "<span class='ok'>Unified!</span> {count} relay(s) updated. k3 and k10002 now agree "
+            + "on {total} relay(s)!",
     },
     nuts: {
         intro: "GREETINGS!! I am Dr. Nuts!! Enter an NPUB and witness my DIAGNOSTIC PROTOCOL!! Relay discovery! Sync verification! Marmot compliance! VITALS!! *cackles*",
@@ -262,6 +272,11 @@ const LINES = {
         deleteKpFail: "<span class='err'>DELETION FAILED!!</span> The extension REFUSED!! Or the relays REBELLED!!",
         noNip07ForAction: "IMPOSSIBLE without <span class='hi'>NIP-07</span>!! Install an extension!! SCIENCE DEMANDS IT!!",
         nextPatient: "NEXT PATIENT!! BRING ME ANOTHER NPUB!! THE EXPERIMENTS CONTINUE!!",
+        relayDivergence: "<span class='warn'>RELAY DIVERGENCE DETECTED!!</span> {k3Only} relay(s) ONLY in k3!! "
+            + "{k10002Only} ONLY in k10002!! INCONSISTENCY!! UNIFY THEM!!",
+        unifyRelaysStart: "MERGING RELAY LISTS!! k3 and k10002 SHALL BE UNIFIED!! BROADCASTING!!",
+        unifyRelaysDone: "<span class='ok'>UNIFICATION COMPLETE!!</span> {count} relay(s) SYNCHRONIZED!! "
+            + "k3 and k10002 now share {total} relay(s)!!",
     },
     daimon: {
         intro: "I am Daimon. Enter an npub. I will run the diagnostic. I never fail. *adjusts scrub cap*",
@@ -306,6 +321,11 @@ const LINES = {
         deleteKpFail: "<span class='err'>Failed.</span> Extension or relay error.",
         noNip07ForAction: "NIP-07 required. Install an extension.",
         nextPatient: "Next patient. Enter an npub.",
+        relayDivergence: "<span class='warn'>Relay divergence.</span> {k3Only} relay(s) only in k3, "
+            + "{k10002Only} only in k10002. Unify them.",
+        unifyRelaysStart: "Merging k3 and k10002 relay lists. Broadcasting.",
+        unifyRelaysDone: "<span class='ok'>Done.</span> {count} relay(s) updated. k3 and k10002 now carry "
+            + "{total} relay(s).",
     },
     house: {
         intro: "Give me an npub. I'll run a diagnostic. Everybody lies, especially metadata. *leans on cane*",

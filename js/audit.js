@@ -184,7 +184,9 @@ async function runResiliencePhase(
         }
     }
 
-    const followCount = bestK3?.tags?.filter(t => t[0] === 'p' && t[1]).length ?? 0;
+    const followCount = Array.isArray(bestK3?.tags)
+        ? bestK3.tags.filter(t => Array.isArray(t) && t.length > 1 && t[0] === 'p' && typeof t[1] === 'string').length
+        : 0;
     const socialItems = [];
     if (maxK3 > 0) {
         socialItems.push({ type: 'ok', text: `Follow list: ${followCount} contact(s)` });
@@ -265,9 +267,9 @@ async function runMarmotPhase(pool, best10051, relaysToInvestigate, relayData, p
         let newestKp = 0;
         let oldestKp = Infinity;
         for (const kp of kpEventsCollected) {
-            const cph = kp.tags?.find(t => t[0] === 'mls_ciphersuite');
+            const cph = Array.isArray(kp.tags) ? kp.tags.find(t => Array.isArray(t) && t.length >= 2 && t[0] === 'mls_ciphersuite') : undefined;
             if (cph?.[1]) ciphersuites.add(cph[1]);
-            const cli = kp.tags?.find(t => t[0] === 'client');
+            const cli = Array.isArray(kp.tags) ? kp.tags.find(t => Array.isArray(t) && t.length >= 2 && t[0] === 'client') : undefined;
             if (cli?.[1]) clients.add(cli[1]);
             if (kp.created_at) {
                 if (kp.created_at > newestKp) newestKp = kp.created_at;
@@ -438,6 +440,7 @@ export async function startAudit(opts = {}) {
     }
 
     isAuditing = true;
+    lastAuditState = null;
     clearQueue();
     auditBtn.disabled = true;
     nip07Btn.disabled = true;
@@ -480,108 +483,116 @@ export async function startAudit(opts = {}) {
         legacyDmsConfigured: false,
     };
 
-    const boot = await runBootstrapPhase(pool, pubkey, auditCtx);
-    const { relayData, relaysToInvestigate, invalidUserRelays } = boot;
+    let marmotRelaysForCleanup = [];
+    try {
+        const boot = await runBootstrapPhase(pool, pubkey, auditCtx);
+        const { relayData, relaysToInvestigate, invalidUserRelays } = boot;
 
-    const sync = await runSyncPhase(relaysToInvestigate, relayData);
-    const {
-        maxK0,
-        maxK3,
-        max10051,
-        best10051,
-        bestK10002,
-        best10050,
-        best10063,
-        best10011,
-        depK4,
-        depK2,
-        cwItems,
-        hasCrossed,
-    } = sync;
-
-    const bestK0 = maxK0
-        ? [...relaysToInvestigate].map(r => relayData[r]?.[0]).find(e => e?.created_at === maxK0)
-        : null;
-    await runVitalsPhase(bestK0, pubkey, auditCtx);
-
-    const bestK3 = maxK3
-        ? [...relaysToInvestigate].map(r => relayData[r]?.[3]).find(e => e?.created_at === maxK3)
-        : null;
-    const resilience = await runResiliencePhase(
-        relaysToInvestigate,
-        relayData,
-        maxK0,
-        maxK3,
-        max10051,
-        bestK3,
-        cwItems,
-        hasCrossed,
-        auditCtx,
-    );
-    const { nowSec } = resilience;
-
-    const nip65Result = await runNip65Phase(bestK10002, bestK3, auditCtx);
-    const { k3RelaySet, k10002RelaySet, canUnifyRelays } = nip65Result;
-
-    const marmotResult = await runMarmotPhase(
-        pool,
-        best10051,
-        relaysToInvestigate,
-        relayData,
-        pubkey,
-        auditCtx,
-    );
-    const { mipItems, marmotRelays, kpEventsCollected, invalidMarmot } = marmotResult;
-
-    const services = buildServicesAndDeprecation(
-        best10050,
-        best10063,
-        best10011,
-        depK4,
-        depK2,
-        nowSec,
-        auditCtx,
-    );
-    const { servicesItems, deprecationItems } = services;
-    appendResultSection('SERVICES & IDENTITY', servicesItems);
-    appendResultSection('DEPRECATION SCAN', deprecationItems);
-
-    runCleanupPhase(pool, relaysToInvestigate, marmotRelays);
-
-    await runCompileAndRenderPhase(
-        rawNpub,
-        {
-            relayData,
-            relaysToInvestigate,
-            invalidUserRelays,
-            invalidMarmot,
-            mipItems,
-            marmotRelays,
-            kpEventsCollected,
-            bestK0,
-            bestK3,
+        const sync = await runSyncPhase(relaysToInvestigate, relayData);
+        const {
+            maxK0,
+            maxK3,
+            max10051,
+            best10051,
             bestK10002,
             best10050,
             best10063,
-            best10051,
+            best10011,
+            depK4,
+            depK2,
+            cwItems,
+            hasCrossed,
+        } = sync;
+
+        const bestK0 = maxK0
+            ? [...relaysToInvestigate].map(r => relayData[r]?.[0]).find(e => e?.created_at === maxK0)
+            : null;
+        await runVitalsPhase(bestK0, pubkey, auditCtx);
+
+        const bestK3 = maxK3
+            ? [...relaysToInvestigate].map(r => relayData[r]?.[3]).find(e => e?.created_at === maxK3)
+            : null;
+        const resilience = await runResiliencePhase(
+            relaysToInvestigate,
+            relayData,
             maxK0,
             maxK3,
+            max10051,
+            bestK3,
+            cwItems,
+            hasCrossed,
             auditCtx,
-            k3RelaySet,
-            k10002RelaySet,
-            canUnifyRelays,
-            fromNip07,
-            pubkey,
-        },
-        kpEventsCollected,
-        canUnifyRelays,
-        auditCtx,
-    );
+        );
+        const { nowSec } = resilience;
 
-    isAuditing = false;
-    setOnAllDone(() => {
-        auditBtn.disabled = false;
-        nip07Btn.disabled = false;
-        nextBtn.classList.remove('hidden');
-    });
+        const nip65Result = await runNip65Phase(bestK10002, bestK3, auditCtx);
+        const { k3RelaySet, k10002RelaySet, canUnifyRelays } = nip65Result;
+
+        const marmotResult = await runMarmotPhase(
+            pool,
+            best10051,
+            relaysToInvestigate,
+            relayData,
+            pubkey,
+            auditCtx,
+        );
+        const { mipItems, marmotRelays, kpEventsCollected, invalidMarmot } = marmotResult;
+        marmotRelaysForCleanup = marmotRelays;
+
+        const services = buildServicesAndDeprecation(
+            best10050,
+            best10063,
+            best10011,
+            depK4,
+            depK2,
+            nowSec,
+            auditCtx,
+        );
+        const { servicesItems, deprecationItems } = services;
+        appendResultSection('SERVICES & IDENTITY', servicesItems);
+        appendResultSection('DEPRECATION SCAN', deprecationItems);
+
+        runCleanupPhase(pool, relaysToInvestigate, marmotRelays);
+
+        await runCompileAndRenderPhase(
+            rawNpub,
+            {
+                relayData,
+                relaysToInvestigate,
+                invalidUserRelays,
+                invalidMarmot,
+                mipItems,
+                marmotRelays,
+                kpEventsCollected,
+                bestK0,
+                bestK3,
+                bestK10002,
+                best10050,
+                best10063,
+                best10051,
+                maxK0,
+                maxK3,
+                auditCtx,
+                k3RelaySet,
+                k10002RelaySet,
+                canUnifyRelays,
+                fromNip07,
+                pubkey,
+            },
+            kpEventsCollected,
+            canUnifyRelays,
+            auditCtx,
+        );
+    } catch (err) {
+        console.error('Audit failed with unexpected error', err);
+        removeScanBar();
+        try { pool.close([...DEFAULT_RELAYS, ...marmotRelaysForCleanup]); } catch { /* ignore */ }
+    } finally {
+        isAuditing = false;
+        setOnAllDone(() => {
+            auditBtn.disabled = false;
+            nip07Btn.disabled = false;
+            nextBtn.classList.remove('hidden');
+        });
+    }
 }

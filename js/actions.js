@@ -150,18 +150,26 @@ export async function deleteKeyPackages() {
 function buildUnifiedRelays(state) {
     const { bestK3, bestK10002, pubkey } = state;
     const merged = new Set();
-    if (bestK3?.tags) {
+    if (Array.isArray(bestK3?.tags)) {
         for (const t of bestK3.tags) {
-            if (t[0] === 'relay' && t[1] && validateRelayUrl(t[1].trim()).valid) merged.add(t[1].trim());
+            if (Array.isArray(t) && typeof t[0] === 'string' && typeof t[1] === 'string' && t[1]
+                && t[0] === 'relay' && validateRelayUrl(t[1].trim()).valid) {
+                merged.add(t[1].trim());
+            }
         }
     }
-    if (bestK10002?.tags) {
+    if (Array.isArray(bestK10002?.tags)) {
         for (const t of bestK10002.tags) {
-            if (t[0] === 'r' && t[1] && validateRelayUrl(t[1].trim()).valid) merged.add(t[1].trim());
+            if (Array.isArray(t) && typeof t[0] === 'string' && typeof t[1] === 'string' && t[1]
+                && t[0] === 'r' && validateRelayUrl(t[1].trim()).valid) {
+                merged.add(t[1].trim());
+            }
         }
     }
     const mergedRelays = [...merged];
-    const pTags = bestK3?.tags?.filter(t => t[0] === 'p') ?? [];
+    const pTags = Array.isArray(bestK3?.tags)
+        ? bestK3.tags.filter(t => Array.isArray(t) && typeof t[0] === 'string' && t[0] === 'p')
+        : [];
     const unsignedK3 = {
         kind: 3,
         created_at: Math.floor(Date.now() / 1000),

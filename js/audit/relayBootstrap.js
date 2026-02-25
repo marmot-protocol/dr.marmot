@@ -3,7 +3,8 @@
  */
 
 import { DEFAULT_RELAYS } from '../config.js';
-import { shortUrl } from '../relay-panel.js';
+import { shortUrl } from '../relay-validation.js';
+import { escapeHtml } from '../html.js';
 import { extractUserRelays } from '../relay-discovery.js';
 import { queryRelayForKinds } from '../relay-query.js';
 
@@ -50,11 +51,11 @@ function parseDiscoveryEvents(bootstrapResults) {
     const urlValidityItems = [];
     if (invalidUserRelays.length > 0) {
         for (const { url, reason } of invalidUserRelays) {
-            urlValidityItems.push({ type: 'err', text: `Invalid relay: ${url} — ${reason}` });
+            urlValidityItems.push({ type: 'err', text: `Invalid relay: ${escapeHtml(String(url || ''))} — ${escapeHtml(String(reason || ''))}` });
         }
     }
     for (const relay of userRelays) {
-        urlValidityItems.push({ type: 'ok', text: `${shortUrl(relay)} — valid format` });
+        urlValidityItems.push({ type: 'ok', text: `${escapeHtml(shortUrl(relay))} — valid format` });
     }
 
     return { allEventsForDiscovery, userRelays, invalidUserRelays, urlValidityItems };

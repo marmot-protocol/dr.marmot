@@ -32,7 +32,10 @@ export function analyzeK10002Relays(bestK10002, auditCtx) {
         auditCtx.nip65Malformed = true;
     }
 
-    const relayTags = tagsRaw.filter(tag => Array.isArray(tag) && tag[0] === 'r' && tag[1]);
+    const relayTags = tagsRaw.filter(tag =>
+        Array.isArray(tag) && tag[0] === 'r' && typeof tag[1] === 'string' && tag[1]
+        && validateRelayUrl(tag[1]).valid,
+    );
     const readRelays = relayTags.filter(tag => !tag[2] || tag[2] === 'read');
     const writeRelays = relayTags.filter(tag => !tag[2] || tag[2] === 'write');
     const totalRelayCount = new Set(relayTags.map(tag => tag[1])).size;
@@ -140,7 +143,9 @@ export function analyzeNip65AndContacts(bestK10002, bestK3, auditCtx) {
 
     if (Array.isArray(bestK3?.tags)) {
         for (const tag of bestK3.tags) {
-            if (tag[0] === 'relay' && tag[1] && validateRelayUrl(tag[1].trim()).valid) {
+            if (!Array.isArray(tag) || tag.length < 2) continue;
+            if (tag[0] === 'relay' && typeof tag[1] === 'string' && tag[1]
+                && validateRelayUrl(tag[1].trim()).valid) {
                 k3RelaySet.add(tag[1].trim().toLowerCase());
             }
         }
