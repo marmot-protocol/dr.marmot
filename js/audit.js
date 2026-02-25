@@ -368,12 +368,16 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
             rebroadcastBtn.disabled = true;
             rebroadcastBtn.classList.add('working');
             rebroadcastBtn.textContent = 'WORKING…';
+            let succeeded = false;
             try {
                 await rebroadcastProfileAndContacts();
+                succeeded = true;
+            } catch (err) {
+                console.error('Rebroadcast action failed', err);
             } finally {
                 rebroadcastBtn.disabled = false;
                 rebroadcastBtn.classList.remove('working');
-                rebroadcastBtn.textContent = 'DONE';
+                rebroadcastBtn.textContent = succeeded ? 'DONE' : 'ERROR';
             }
         });
     }
@@ -383,12 +387,16 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
             deleteKpBtn.disabled = true;
             deleteKpBtn.classList.add('working');
             deleteKpBtn.textContent = 'WORKING…';
+            let succeeded = false;
             try {
                 await deleteKeyPackages();
+                succeeded = true;
+            } catch (err) {
+                console.error('Delete KeyPackages action failed', err);
             } finally {
                 deleteKpBtn.disabled = false;
                 deleteKpBtn.classList.remove('working');
-                deleteKpBtn.textContent = 'DONE';
+                deleteKpBtn.textContent = succeeded ? 'DONE' : 'ERROR';
             }
         });
     }
@@ -398,12 +406,16 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
             unifyRelaysBtn.disabled = true;
             unifyRelaysBtn.classList.add('working');
             unifyRelaysBtn.textContent = 'WORKING…';
+            let succeeded = false;
             try {
                 await unifyRelayLists();
+                succeeded = true;
+            } catch (err) {
+                console.error('Unify relay lists action failed', err);
             } finally {
                 unifyRelaysBtn.disabled = false;
                 unifyRelaysBtn.classList.remove('working');
-                unifyRelaysBtn.textContent = 'DONE';
+                unifyRelaysBtn.textContent = succeeded ? 'DONE' : 'ERROR';
             }
         });
     }

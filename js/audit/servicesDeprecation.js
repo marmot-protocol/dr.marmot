@@ -3,21 +3,22 @@
  */
 
 import { escapeHtml } from '../html.js';
+import { validateRelayUrl } from '../relay-validation.js';
 
 /**
  * @param {Object|null} best10050
  * @param {Object|null} best10063
  * @param {Object|null} best10011
- * @param {number} nowSec
  * @param {Object} auditCtx - mutated
  * @returns {Array<{type:string,text:string}>}
  */
-export function buildServicesItems(best10050, best10063, best10011, nowSec, auditCtx) {
+export function buildServicesItems(best10050, best10063, best10011, auditCtx) {
     const servicesItems = [];
 
     if (best10050) {
         const dmRelayTags = (Array.isArray(best10050.tags) ? best10050.tags : [])
-            .filter(t => Array.isArray(t) && t[0] === 'relay' && t[1]);
+            .filter(t => Array.isArray(t) && t[0] === 'relay' && typeof t[1] === 'string'
+                && validateRelayUrl(t[1]).valid);
         if (dmRelayTags.length > 0) {
             servicesItems.push({
                 type: 'ok',
@@ -130,7 +131,7 @@ export function buildDeprecationItems(depK4, depK2, nowSec, auditCtx) {
  * @returns {{ servicesItems: Array<{type:string,text:string}>, deprecationItems: Array<{type:string,text:string}> }}
  */
 export function buildServicesAndDeprecation(best10050, best10063, best10011, depK4, depK2, nowSec, auditCtx) {
-    const servicesItems = buildServicesItems(best10050, best10063, best10011, nowSec, auditCtx);
+    const servicesItems = buildServicesItems(best10050, best10063, best10011, auditCtx);
     const deprecationItems = buildDeprecationItems(depK4, depK2, nowSec, auditCtx);
     return { servicesItems, deprecationItems };
 }

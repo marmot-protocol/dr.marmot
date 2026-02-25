@@ -99,8 +99,10 @@ export function assessRelaySync(relaysToInvestigate, relayData) {
             const ev = relayData[r]?.[10000];
             if (!ev) {
                 cwItems.push({ type: 'warn', text: `${shortUrl(r)} — Mute List (k10000) missing` });
+                hasCrossed = true;
             } else if (ev.created_at < max10000) {
                 cwItems.push({ type: 'warn', text: `${shortUrl(r)} — Mute List (k10000) outdated` });
+                hasCrossed = true;
             } else {
                 cwItems.push({ type: 'ok', text: `${shortUrl(r)} — Mute List in sync` });
             }

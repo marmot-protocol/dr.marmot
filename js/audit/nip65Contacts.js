@@ -41,13 +41,18 @@ export function analyzeK10002Relays(bestK10002, auditCtx) {
         auditCtx.nip65Malformed = true;
     }
 
-    const relayTags = tagsRaw.filter(tag =>
-        Array.isArray(tag) && tag[0] === 'r' && typeof tag[1] === 'string' && tag[1]
-        && validateRelayUrl(tag[1]).valid,
-    );
-    const readRelays = relayTags.filter(tag => !tag[2] || tag[2] === 'read');
-    const writeRelays = relayTags.filter(tag => !tag[2] || tag[2] === 'write');
-    const totalRelayCount = new Set(relayTags.map(tag => tag[1])).size;
+    // Normalize each valid relay tag to a { url, marker } pair so deduplication
+    // and counts are based on the same trimmed/lowercased canonical form used in k10002RelaySet.
+    const relayTags = tagsRaw.reduce((acc, tag) => {
+        if (!Array.isArray(tag) || tag[0] !== 'r' || typeof tag[1] !== 'string' || !tag[1]) return acc;
+        const url = tag[1].trim().toLowerCase();
+        if (!url || !validateRelayUrl(url).valid) return acc;
+        acc.push({ url, marker: tag[2] ?? null });
+        return acc;
+    }, []);
+    const readRelays = relayTags.filter(({ marker }) => !marker || marker === 'read');
+    const writeRelays = relayTags.filter(({ marker }) => !marker || marker === 'write');
+    const totalRelayCount = new Set(relayTags.map(({ url }) => url)).size;
 
     if (totalRelayCount === 0) {
         relayConfigItemsPart.push({ type: 'err', text: 'kind 10002 (NIP-65) has no relay tags' });
@@ -88,8 +93,8 @@ export function analyzeK10002Relays(bestK10002, auditCtx) {
         }
     }
 
-    for (const tag of relayTags) {
-        k10002RelaySet.add(tag[1].trim().toLowerCase());
+    for (const { url } of relayTags) {
+        k10002RelaySet.add(url);
     }
 
     return { relayConfigItemsPart, k10002RelaySet, flags };
