@@ -4,6 +4,15 @@
 
 import { validateRelayUrl } from '../relay-validation.js';
 
+/**
+ * Analyse a kind 10002 (NIP-65) relay list event, counting valid read/write relays and
+ * populating the k10002RelaySet with normalised (lowercase-trimmed) relay URLs.
+ * Mutates auditCtx flags: nip65Malformed, nip65NoRead, nip65NoWrite, nip65Bloated.
+ * @param {Object|null} bestK10002 - Best kind 10002 event found, or null if absent
+ * @param {Object} auditCtx - Audit context object, mutated in place
+ * @returns {{ relayConfigItemsPart: Array<{type:string,text:string}>, k10002RelaySet: Set<string>,
+ *   flags: {nip65Malformed:boolean, nip65NoRead:boolean, nip65NoWrite:boolean, nip65Bloated:boolean} }}
+ */
 export function analyzeK10002Relays(bestK10002, auditCtx) {
     const relayConfigItemsPart = [];
     const k10002RelaySet = new Set();
@@ -80,13 +89,19 @@ export function analyzeK10002Relays(bestK10002, auditCtx) {
     }
 
     for (const tag of relayTags) {
-        const relay = String(tag[1]).trim();
-        if (validateRelayUrl(relay).valid) k10002RelaySet.add(relay.toLowerCase());
+        k10002RelaySet.add(tag[1].trim().toLowerCase());
     }
 
     return { relayConfigItemsPart, k10002RelaySet, flags };
 }
 
+/**
+ * Compute divergence between k3 (Contacts) and k10002 (NIP-65) relay sets.
+ * @param {Set<string>} k3RelaySet - Normalised relay URLs from kind 3
+ * @param {Set<string>} k10002RelaySet - Normalised relay URLs from kind 10002
+ * @returns {{ canUnifyRelays: boolean, relayDivergenceVars: {k3Only:number,k10002Only:number}|null,
+ *   divergenceItems: Array<{type:string,text:string}> }}
+ */
 export function computeRelayDivergence(k3RelaySet, k10002RelaySet) {
     const relayDivergenceVars = null;
     const divergenceItems = [];

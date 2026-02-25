@@ -151,26 +151,32 @@ async function runResiliencePhase(
 
     const nowSec = Math.floor(Date.now() / 1000);
     const daysAgo = ts => (ts ? Math.floor((nowSec - ts) / 86400) : null);
+    const formatFreshnessText = (days) => {
+        if (days === 0) return 'today';
+        if (days === 1) return '1 day ago';
+        if (days < 365) return `${days} days ago`;
+        return `over 1 year ago (${days} days)`;
+    };
     const freshnessItems = [];
     if (maxK0 > 0) {
         const days = daysAgo(maxK0);
         freshnessItems.push({
             type: days !== null && days > 365 ? 'warn' : 'ok',
-            text: `Profile (k0): ${days === 0 ? 'today' : days === 1 ? '1 day ago' : days < 365 ? `${days} days ago` : `over 1 year ago (${days} days)`}`,
+            text: `Profile (k0): ${formatFreshnessText(days)}`,
         });
     }
     if (maxK3 > 0) {
         const days = daysAgo(maxK3);
         freshnessItems.push({
             type: days !== null && days > 365 ? 'warn' : 'ok',
-            text: `Contacts (k3): ${days === 0 ? 'today' : days === 1 ? '1 day ago' : days < 365 ? `${days} days ago` : `over 1 year ago (${days} days)`}`,
+            text: `Contacts (k3): ${formatFreshnessText(days)}`,
         });
     }
     if (max10051 > 0) {
         const days = daysAgo(max10051);
         freshnessItems.push({
             type: days !== null && days > 365 ? 'warn' : 'ok',
-            text: `KeyPackage list (k10051): ${days === 0 ? 'today' : days === 1 ? '1 day ago' : days < 365 ? `${days} days ago` : `over 1 year ago (${days} days)`}`,
+            text: `KeyPackage list (k10051): ${formatFreshnessText(days)}`,
         });
     }
     if (freshnessItems.length > 0) {
@@ -362,9 +368,13 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
             rebroadcastBtn.disabled = true;
             rebroadcastBtn.classList.add('working');
             rebroadcastBtn.textContent = 'WORKING…';
-            await rebroadcastProfileAndContacts();
-            rebroadcastBtn.classList.remove('working');
-            rebroadcastBtn.textContent = 'DONE';
+            try {
+                await rebroadcastProfileAndContacts();
+            } finally {
+                rebroadcastBtn.disabled = false;
+                rebroadcastBtn.classList.remove('working');
+                rebroadcastBtn.textContent = 'DONE';
+            }
         });
     }
     if (deleteKpBtn) {
@@ -373,9 +383,13 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
             deleteKpBtn.disabled = true;
             deleteKpBtn.classList.add('working');
             deleteKpBtn.textContent = 'WORKING…';
-            await deleteKeyPackages();
-            deleteKpBtn.classList.remove('working');
-            deleteKpBtn.textContent = 'DONE';
+            try {
+                await deleteKeyPackages();
+            } finally {
+                deleteKpBtn.disabled = false;
+                deleteKpBtn.classList.remove('working');
+                deleteKpBtn.textContent = 'DONE';
+            }
         });
     }
     if (unifyRelaysBtn) {
@@ -384,9 +398,13 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
             unifyRelaysBtn.disabled = true;
             unifyRelaysBtn.classList.add('working');
             unifyRelaysBtn.textContent = 'WORKING…';
-            await unifyRelayLists();
-            unifyRelaysBtn.classList.remove('working');
-            unifyRelaysBtn.textContent = 'DONE';
+            try {
+                await unifyRelayLists();
+            } finally {
+                unifyRelaysBtn.disabled = false;
+                unifyRelaysBtn.classList.remove('working');
+                unifyRelaysBtn.textContent = 'DONE';
+            }
         });
     }
 
@@ -484,9 +502,11 @@ export async function startAudit(opts = {}) {
     };
 
     let marmotRelaysForCleanup = [];
+    let relaysToInvestigateForCleanup = [];
     try {
         const boot = await runBootstrapPhase(pool, pubkey, auditCtx);
         const { relayData, relaysToInvestigate, invalidUserRelays } = boot;
+        relaysToInvestigateForCleanup = relaysToInvestigate;
 
         const sync = await runSyncPhase(relaysToInvestigate, relayData);
         const {
@@ -586,7 +606,7 @@ export async function startAudit(opts = {}) {
     } catch (err) {
         console.error('Audit failed with unexpected error', err);
         removeScanBar();
-        try { pool.close([...DEFAULT_RELAYS, ...marmotRelaysForCleanup]); } catch { /* ignore */ }
+        try { pool.close([...new Set([...DEFAULT_RELAYS, ...relaysToInvestigateForCleanup, ...marmotRelaysForCleanup])]); } catch { /* ignore */ }
     } finally {
         isAuditing = false;
         setOnAllDone(() => {

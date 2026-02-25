@@ -18,11 +18,18 @@ export function buildServicesItems(best10050, best10063, best10011, nowSec, audi
     if (best10050) {
         const dmRelayTags = (Array.isArray(best10050.tags) ? best10050.tags : [])
             .filter(t => Array.isArray(t) && t[0] === 'relay' && t[1]);
-        servicesItems.push({
-            type: 'ok',
-            text: `NIP-17 DM relay list (k10050): ${dmRelayTags.length} relay(s) configured`,
-        });
-        auditCtx.legacyDmsConfigured = true;
+        if (dmRelayTags.length > 0) {
+            servicesItems.push({
+                type: 'ok',
+                text: `NIP-17 DM relay list (k10050): ${dmRelayTags.length} relay(s) configured`,
+            });
+            auditCtx.legacyDmsConfigured = true;
+        } else {
+            servicesItems.push({
+                type: 'warn',
+                text: 'NIP-17 DM relay list (k10050) found but contains no relay tags',
+            });
+        }
     } else {
         servicesItems.push({
             type: 'warn',
@@ -33,11 +40,18 @@ export function buildServicesItems(best10050, best10063, best10011, nowSec, audi
     if (best10063) {
         const blossomServerTags = (Array.isArray(best10063.tags) ? best10063.tags : [])
             .filter(t => Array.isArray(t) && t[0] === 'server' && t[1]);
-        servicesItems.push({
-            type: 'ok',
-            text: `Blossom server list (k10063): ${blossomServerTags.length} server(s) configured`,
-        });
-        auditCtx.blossomConfigured = true;
+        if (blossomServerTags.length > 0) {
+            servicesItems.push({
+                type: 'ok',
+                text: `Blossom server list (k10063): ${blossomServerTags.length} server(s) configured`,
+            });
+            auditCtx.blossomConfigured = true;
+        } else {
+            servicesItems.push({
+                type: 'warn',
+                text: 'Blossom server list (k10063) found but contains no server tags',
+            });
+        }
     } else {
         servicesItems.push({
             type: 'warn',

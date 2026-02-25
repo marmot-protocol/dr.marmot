@@ -31,7 +31,7 @@ export function assessRelaySync(relaysToInvestigate, relayData) {
     let bestK10002 = null, maxK10002 = 0;
     let best10050 = null, best10063 = null, best10011 = null;
     let depK4 = null, depK2 = null;
-    for (const r of Object.keys(relayData)) {
+    for (const r of relaysToInvestigate) {
         const d = relayData[r];
         if (!d) continue;
         if (d[10002]?.created_at > maxK10002) { maxK10002 = d[10002].created_at; bestK10002 = d[10002]; }

@@ -9,6 +9,7 @@ import {
     VALID_CIPHERSUITES,
     DEFAULT_EXTENSIONS,
 } from '../mip-validation.js';
+import { RELAY_TIMEOUT_MS } from '../config.js';
 
 function parse10051Relays(best10051, auditCtx, mipItems) {
     const invalidMarmot = [];
@@ -22,16 +23,16 @@ function parse10051Relays(best10051, auditCtx, mipItems) {
 
     const rawMarmotRelays = (Array.isArray(best10051.tags) ? best10051.tags : [])
         .filter(tag => Array.isArray(tag) && tag[0] === 'relay' && tag[1])
-        .map(tag => tag[1]);
+        .map(tag => (tag[1] || '').trim());
     const invalidSeen = new Set();
-    marmotRelays = rawMarmotRelays.filter((url) => {
-        const validated = validateRelayUrl(url);
+    marmotRelays = rawMarmotRelays.filter((normalized) => {
+        const validated = validateRelayUrl(normalized);
         if (!validated.valid) {
-            const key = (url || '').toLowerCase();
+            const key = normalized.toLowerCase();
             if (!invalidSeen.has(key)) {
                 invalidSeen.add(key);
                 invalidMarmot.push({
-                    url: (url || '').slice(0, 50) + ((url || '').length > 50 ? '…' : ''),
+                    url: normalized.slice(0, 50) + (normalized.length > 50 ? '…' : ''),
                     reason: validated.reason,
                 });
             }
@@ -60,12 +61,13 @@ function parse10051Relays(best10051, auditCtx, mipItems) {
 
 function validateSingleKeyPackage(kp, marmotRelaySet) {
     const tags = Array.isArray(kp.tags) ? kp.tags : [];
-    const enc = tags.find(t => t[0] === 'encoding');
-    const ver = tags.find(t => t[0] === 'mls_protocol_version');
-    const iTag = tags.find(t => t[0] === 'i');
-    const ext = tags.find(t => t[0] === 'mls_extensions');
-    const cph = tags.find(t => t[0] === 'mls_ciphersuite');
-    const rel = tags.find(t => t[0] === 'relays');
+    const isTag = t => Array.isArray(t) && t.length > 0 && typeof t[0] === 'string';
+    const enc = tags.find(t => isTag(t) && t[0] === 'encoding');
+    const ver = tags.find(t => isTag(t) && t[0] === 'mls_protocol_version');
+    const iTag = tags.find(t => isTag(t) && t[0] === 'i');
+    const ext = tags.find(t => isTag(t) && t[0] === 'mls_extensions');
+    const cph = tags.find(t => isTag(t) && t[0] === 'mls_ciphersuite');
+    const rel = tags.find(t => isTag(t) && t[0] === 'relays');
 
     const errs = [];
     if (!kp.content || typeof kp.content !== 'string') errs.push('missing content');
@@ -115,7 +117,7 @@ function validateSingleKeyPackage(kp, marmotRelaySet) {
     }
 
     const hasClientTag = tags.some(t => Array.isArray(t) && t[0] === 'client' && t[1]);
-    const shortId = `${kp.id.slice(0, 8)}…`;
+    const shortId = typeof kp.id === 'string' && kp.id.length >= 8 ? `${kp.id.slice(0, 8)}…` : '(no id)';
     return { errs, hasClientTag, shortId };
 }
 
@@ -208,7 +210,13 @@ export async function evaluateMarmot(pool, best10051, relaysToInvestigate, relay
 
     let kpEvents = [];
     try {
-        kpEvents = await pool.querySync(marmotRelays, { authors: [pubkey], kinds: [443] });
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('KeyPackage query timed out')), RELAY_TIMEOUT_MS),
+        );
+        kpEvents = await Promise.race([
+            pool.querySync(marmotRelays, { authors: [pubkey], kinds: [443] }),
+            timeoutPromise,
+        ]);
         kpEventsCollected = kpEvents;
         auditCtx.kpCount = kpEvents.length;
         for (const r of marmotRelays) {

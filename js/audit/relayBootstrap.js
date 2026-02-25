@@ -17,7 +17,7 @@ async function performBootstrapQueries(pool, pubkey, relayData, relayStates) {
         try {
             const res = await queryRelayForKinds(pool, relay, pubkey, BOOTSTRAP_KINDS);
             relayData[relay] = res;
-            const hasAny = res[0] || res[3] || res[10002] || res[10051];
+            const hasAny = Object.values(res).some(Boolean);
             relayStates.push({
                 relay,
                 state: hasAny ? 'ok' : 'error',
@@ -66,7 +66,7 @@ async function performUserRelayQueries(pool, toQuery, pubkey, relayData, relaySt
         try {
             const res = await queryRelayForKinds(pool, relay, pubkey, USER_RELAY_KINDS);
             relayData[relay] = res;
-            const hasAny = res[0] || res[3] || res[10050] || res[10051] || res[10063];
+            const hasAny = Object.values(res).some(Boolean);
             relayStates.push({
                 relay,
                 state: hasAny ? 'ok' : 'error',
