@@ -35,11 +35,21 @@ export function assessRelaySync(relaysToInvestigate, relayData) {
         const d = relayData[r];
         if (!d) continue;
         if (d[10002]?.created_at > maxK10002) { maxK10002 = d[10002].created_at; bestK10002 = d[10002]; }
-        if (!best10050 && d[10050]) best10050 = d[10050];
-        if (!best10063 && d[10063]) best10063 = d[10063];
-        if (!best10011 && d[10011]) best10011 = d[10011];
-        if (!depK4 && d[4]) depK4 = d[4];
-        if (!depK2 && d[2]) depK2 = d[2];
+        if (d[10050] && (!best10050 || d[10050].created_at > best10050.created_at)) {
+            best10050 = d[10050];
+        }
+        if (d[10063] && (!best10063 || d[10063].created_at > best10063.created_at)) {
+            best10063 = d[10063];
+        }
+        if (d[10011] && (!best10011 || d[10011].created_at > best10011.created_at)) {
+            best10011 = d[10011];
+        }
+        if (d[4] && (!depK4 || d[4].created_at > depK4.created_at)) {
+            depK4 = d[4];
+        }
+        if (d[2] && (!depK2 || d[2].created_at > depK2.created_at)) {
+            depK2 = d[2];
+        }
     }
 
     const cwItems = [];

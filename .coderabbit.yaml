@@ -52,9 +52,7 @@ reviews:
         - Strict equality (===) ALWAYS. == is a war crime
         - No unused variables, parameters, or imports
         - No console.log in production code (console.error/warn acceptable for actual errors)
-        - No magic numbers - use named constants
-        - No functions longer than 30 lines - suggest extraction
-        - No nested callbacks deeper than 2 levels - suggest async/await or extraction
+        - No nested callbacks deeper than 2 levels - suggest async/await
         - No implicit type coercion tricks
 
         **Modern JS Patterns:**

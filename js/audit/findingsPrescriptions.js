@@ -64,58 +64,79 @@ export function pickClosingMessage(ctx, failures, categories) {
     return topFail.length > 70 ? topFail.slice(0, 67) + '…' : topFail;
 }
 
-/**
- * @param {Object} params
- * @returns {{ findings: Object, prescriptions: string[], verdictClass: string, verdictIcon: string, verdictLabel: string,
- *   hasFailures: boolean, hasWarnings: boolean, allOk: boolean, lastAuditState: Object, canRebroadcast: boolean,
- *   canDeleteKps: boolean, missingITagIds: string[], syncedRelays: number, staleRelays: number, missingRelays: number, totalRelays: number }}
- */
-export function compileFindingsAndPrescriptions(params) {
-    const {
-        relayData,
-        relaysToInvestigate,
-        invalidUserRelays,
-        invalidMarmot,
-        mipItems,
-        marmotRelays,
-        kpEventsCollected,
-        bestK0,
-        bestK3,
-        bestK10002,
-        best10050,
-        best10063,
-        best10051,
-        maxK0,
-        maxK3,
-        auditCtx,
-        k3RelaySet,
-        k10002RelaySet,
-        canUnifyRelays,
-        fromNip07,
-        pubkey,
-    } = params;
-
-    const totalRelays = relaysToInvestigate.length;
+export function tallyRelaySync(relaysToInvestigate, relayData, maxK0, maxK3) {
     let syncedRelays = 0;
     let staleRelays = 0;
     let missingRelays = 0;
+    const totalRelays = relaysToInvestigate.length;
 
-    for (const r of relaysToInvestigate) {
-        const d = relayData[r];
-        const k0ok = d?.[0] && d[0].created_at === maxK0;
-        const k3ok = d?.[3] && d[3].created_at === maxK3;
+    for (const relay of relaysToInvestigate) {
+        const data = relayData[relay];
+        const k0ok = data?.[0] && data[0].created_at === maxK0;
+        const k3ok = data?.[3] && data[3].created_at === maxK3;
         if (k0ok && k3ok) {
             syncedRelays++;
+        } else if (!data?.[0] || !data?.[3]) {
+            missingRelays++;
         } else {
-            if (!d?.[0] || !d?.[3]) missingRelays++;
-            else staleRelays++;
+            staleRelays++;
         }
     }
 
-    auditCtx.syncedRelays = syncedRelays;
-    auditCtx.totalRelays = totalRelays;
-    auditCtx.staleRelays = staleRelays;
-    auditCtx.missingRelays = missingRelays;
+    return { syncedRelays, staleRelays, missingRelays, totalRelays };
+}
+
+export function determineVerdict(findings) {
+    const hasFailures = findings.fail.length > 0;
+    const hasWarnings = findings.warn.length > 0;
+    const allOk = !hasFailures && !hasWarnings;
+
+    if (allOk) {
+        return {
+            verdictClass: 'verdict-pass',
+            verdictIcon: '✔',
+            verdictLabel: 'CLEAN BILL OF HEALTH',
+            hasFailures,
+            hasWarnings,
+            allOk,
+        };
+    }
+    if (!hasFailures && hasWarnings) {
+        return {
+            verdictClass: 'verdict-warn',
+            verdictIcon: '!',
+            verdictLabel: 'MINOR ISSUES DETECTED',
+            hasFailures,
+            hasWarnings,
+            allOk,
+        };
+    }
+    return {
+        verdictClass: 'verdict-fail',
+        verdictIcon: '✖',
+        verdictLabel: 'ISSUES FOUND',
+        hasFailures,
+        hasWarnings,
+        allOk,
+    };
+}
+
+export function generateFindings(params, auditCtx) {
+    const {
+        invalidUserRelays,
+        invalidMarmot,
+        maxK0,
+        maxK3,
+        totalRelays,
+        syncedRelays,
+        staleRelays,
+        missingRelays,
+        relaysToInvestigate,
+        relayData,
+        best10051,
+        marmotRelays,
+        mipItems,
+    } = params;
 
     const findings = { pass: [], warn: [], fail: [] };
 
@@ -140,11 +161,12 @@ export function compileFindingsAndPrescriptions(params) {
     if (maxK3 === 0) {
         findings.fail.push('Contacts list (kind 3) not found on any relay');
     } else {
-        let k3stale = 0, k3miss = 0;
-        for (const r of relaysToInvestigate) {
-            const ev = relayData[r]?.[3];
-            if (!ev) k3miss++;
-            else if (ev.created_at < maxK3) k3stale++;
+        let k3stale = 0;
+        let k3miss = 0;
+        for (const relay of relaysToInvestigate) {
+            const event = relayData[relay]?.[3];
+            if (!event) k3miss++;
+            else if (event.created_at < maxK3) k3stale++;
         }
         if (k3stale === 0 && k3miss === 0) {
             findings.pass.push(`Contacts (kind 3) in sync across all ${totalRelays} relay(s)`);
@@ -183,26 +205,95 @@ export function compileFindingsAndPrescriptions(params) {
     if (auditCtx.hasDeprecatedK4) findings.warn.push('Uses deprecated NIP-04 (kind 4) DMs — leaks metadata');
     if (auditCtx.hasDeprecatedK2) findings.warn.push('Uses deprecated kind 2 relay recommendations');
 
-    const hasFailures = findings.fail.length > 0;
-    const hasWarnings = findings.warn.length > 0;
-    const allOk = !hasFailures && !hasWarnings;
+    const { hasFailures, hasWarnings, allOk } = determineVerdict(findings);
+    return { findings, hasFailures, hasWarnings, allOk };
+}
 
-    let verdictClass, verdictIcon, verdictLabel;
-    if (allOk) {
-        verdictClass = 'verdict-pass';
-        verdictIcon = '✔';
-        verdictLabel = 'CLEAN BILL OF HEALTH';
-    } else if (!hasFailures && hasWarnings) {
-        verdictClass = 'verdict-warn';
-        verdictIcon = '!';
-        verdictLabel = 'MINOR ISSUES DETECTED';
-    } else {
-        verdictClass = 'verdict-fail';
-        verdictIcon = '✖';
-        verdictLabel = 'ISSUES FOUND';
-    }
+const PRESCRIPTION_RULES = [
+    {
+        testAll: context => context.hasNoKeyPackages,
+        message: 'Publish at least one KeyPackage (kind 443) to your advertised relays',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('encoding'),
+        message: 'Fix KeyPackage encoding tag — must be "base64"',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('0xf2ee'),
+        message: 'Add marmot_group_data extension (0xf2ee) to mls_extensions',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('0x000a'),
+        message: 'Add last_resort extension (0x000a) to mls_extensions',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('missing mls_ciphersuite'),
+        message: 'Include the mls_ciphersuite tag in your KeyPackage events',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('not in 0x0001-0x0007'),
+        message: 'Use a supported mls_ciphersuite (0x0001–0x0007) in KeyPackage events',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('missing relays'),
+        message: 'Include the relays tag in your KeyPackage events',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('relays['),
+        message: 'Fix invalid relay URLs in KeyPackage relays tag — use valid wss:// or ws:// URLs',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('no overlap with kind 10051'),
+        message: 'KeyPackage relays tag should include at least one relay from your kind 10051',
+    },
+    {
+        test: (item) =>
+            item.type === 'err'
+            && (
+                item.text.includes('missing content')
+                || item.text.includes('content empty')
+                || item.text.includes('content not valid base64')
+            ),
+        message: 'KeyPackage content must be non-empty, valid base64-encoded KeyPackageBundle',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('i tag:'),
+        message: 'Fix i tag — must be hex-encoded KeyPackageRef with length matching ciphersuite',
+    },
+    {
+        test: (item) => item.type === 'err' && item.text.includes('must not list default extensions'),
+        message: 'Remove default extensions (0x0001–0x0005) from mls_extensions — only custom extensions belong',
+    },
+    {
+        test: (item) => item.type === 'warn' && item.text.includes('kind 10051 content'),
+        message: 'Leave kind 10051 content empty',
+    },
+    {
+        testAll: context => context.missingITagIds.length > 0,
+        message: (_, context) =>
+            `Broadcast delete events (kind 5) for KeyPackages missing the i tag (ids: ${context.missingITagIds.join(', ')}), then publish fresh KeyPackages with the i tag`,
+    },
+];
 
+export function generatePrescriptions(
+    mipItems,
+    auditCtx,
+    marmotRelays,
+    best10051,
+    staleRelays,
+    missingRelays,
+    missingITagIds,
+    invalidUserRelays,
+    invalidMarmot,
+) {
     const prescriptions = [];
+    const ruleContext = {
+        missingITagIds,
+        hasNoKeyPackages: mipItems.some(
+            item => item.type === 'err' && item.text.includes('No KeyPackages'),
+        ),
+    };
+
     if (invalidUserRelays.length > 0) {
         prescriptions.push('Fix invalid relay URLs in your k3 / k10002 / k10051 — use wss:// or ws:// and valid hostnames');
     }
@@ -217,53 +308,18 @@ export function compileFindingsAndPrescriptions(params) {
     } else if (marmotRelays.length === 0) {
         prescriptions.push('Add relay tags to your kind 10051 event');
     }
-    const missingITagIds = [...new Set(
-        mipItems.filter(i => i.type === 'err' && i.text.includes('missing i tag') && i.kpId).map(i => i.kpId)
-    )];
-    if (missingITagIds.length > 0) {
-        prescriptions.push(`Broadcast delete events (kind 5) for KeyPackages missing the i tag (ids: ${missingITagIds.join(', ')}), then publish fresh KeyPackages with the i tag`);
+
+    for (const rule of PRESCRIPTION_RULES) {
+        const passesRule = rule.testAll
+            ? rule.testAll(ruleContext)
+            : mipItems.some(item => rule.test(item, ruleContext));
+        if (!passesRule) continue;
+        const message = typeof rule.message === 'function'
+            ? rule.message(null, ruleContext)
+            : rule.message;
+        prescriptions.push(message);
     }
-    for (const item of mipItems) {
-        if (item.type === 'err' && item.text.includes('No KeyPackages')) {
-            prescriptions.push('Publish at least one KeyPackage (kind 443) to your advertised relays');
-        }
-        if (item.type === 'err' && item.text.includes('encoding')) {
-            prescriptions.push('Fix KeyPackage encoding tag — must be "base64"');
-        }
-        if (item.type === 'err' && item.text.includes('0xf2ee')) {
-            prescriptions.push('Add marmot_group_data extension (0xf2ee) to mls_extensions');
-        }
-        if (item.type === 'err' && item.text.includes('0x000a')) {
-            prescriptions.push('Add last_resort extension (0x000a) to mls_extensions');
-        }
-        if (item.type === 'err' && item.text.includes('missing mls_ciphersuite')) {
-            prescriptions.push('Include the mls_ciphersuite tag in your KeyPackage events');
-        }
-        if (item.type === 'err' && item.text.includes('not in 0x0001-0x0007')) {
-            prescriptions.push('Use a supported mls_ciphersuite (0x0001–0x0007) in KeyPackage events');
-        }
-        if (item.type === 'err' && item.text.includes('missing relays')) {
-            prescriptions.push('Include the relays tag in your KeyPackage events');
-        }
-        if (item.type === 'err' && item.text.includes('relays[')) {
-            prescriptions.push('Fix invalid relay URLs in KeyPackage relays tag — use valid wss:// or ws:// URLs');
-        }
-        if (item.type === 'err' && item.text.includes('no overlap with kind 10051')) {
-            prescriptions.push('KeyPackage relays tag should include at least one relay from your kind 10051');
-        }
-        if (item.type === 'err' && (item.text.includes('missing content') || item.text.includes('content empty') || item.text.includes('content not valid base64'))) {
-            prescriptions.push('KeyPackage content must be non-empty, valid base64-encoded KeyPackageBundle');
-        }
-        if (item.type === 'err' && item.text.includes('i tag:')) {
-            prescriptions.push('Fix i tag — must be hex-encoded KeyPackageRef with length matching ciphersuite');
-        }
-        if (item.type === 'err' && item.text.includes('must not list default extensions')) {
-            prescriptions.push('Remove default extensions (0x0001–0x0005) from mls_extensions — only custom extensions belong');
-        }
-        if (item.type === 'warn' && item.text.includes('kind 10051 content')) {
-            prescriptions.push('Leave kind 10051 content empty');
-        }
-    }
+
     if (best10051 && marmotRelays.length > 0) {
         prescriptions.push('MIP-00: Rotate MLS signing keys periodically within groups; ensure your client supports this');
     }
@@ -295,9 +351,91 @@ export function compileFindingsAndPrescriptions(params) {
         prescriptions.push('Stop publishing kind 2 (Recommend Relay) events — use kind 10002 (NIP-65) instead');
     }
 
-    const uniqueRx = [...new Set(prescriptions)].sort((a, b) => prescriptionPriority(a) - prescriptionPriority(b));
-    const canRebroadcast = (staleRelays > 0 || missingRelays > 0) && (bestK0 || bestK3);
+    const uniqueRx = [...new Set(prescriptions)].sort(
+        (a, b) => prescriptionPriority(a) - prescriptionPriority(b),
+    );
+    const canRebroadcast = (staleRelays > 0 || missingRelays > 0);
     const canDeleteKps = missingITagIds.length > 0;
+    return { prescriptions: uniqueRx, canRebroadcast, canDeleteKps };
+}
+
+/**
+ * @param {Object} params
+ * @returns {{ findings: Object, prescriptions: string[], verdictClass: string, verdictIcon: string, verdictLabel: string,
+ *   hasFailures: boolean, hasWarnings: boolean, allOk: boolean, lastAuditState: Object, canRebroadcast: boolean,
+ *   canDeleteKps: boolean, missingITagIds: string[], syncedRelays: number, staleRelays: number, missingRelays: number, totalRelays: number }}
+ */
+export function compileFindingsAndPrescriptions(params) {
+    const {
+        relayData,
+        relaysToInvestigate,
+        invalidUserRelays,
+        invalidMarmot,
+        mipItems,
+        marmotRelays,
+        kpEventsCollected,
+        bestK0,
+        bestK3,
+        bestK10002,
+        best10050,
+        best10063,
+        best10051,
+        maxK0,
+        maxK3,
+        auditCtx,
+        k3RelaySet,
+        k10002RelaySet,
+        canUnifyRelays,
+        fromNip07,
+        pubkey,
+    } = params;
+
+    const relayTally = tallyRelaySync(relaysToInvestigate, relayData, maxK0, maxK3);
+    const { syncedRelays, staleRelays, missingRelays, totalRelays } = relayTally;
+
+    auditCtx.syncedRelays = syncedRelays;
+    auditCtx.totalRelays = totalRelays;
+    auditCtx.staleRelays = staleRelays;
+    auditCtx.missingRelays = missingRelays;
+
+    const missingITagIds = [...new Set(
+        mipItems.filter(i => i.type === 'err' && i.text.includes('missing i tag') && i.kpId).map(i => i.kpId)
+    )];
+    const findingsResult = generateFindings(
+        {
+            invalidUserRelays,
+            invalidMarmot,
+            maxK0,
+            maxK3,
+            totalRelays,
+            syncedRelays,
+            staleRelays,
+            missingRelays,
+            relaysToInvestigate,
+            relayData,
+            best10051,
+            marmotRelays,
+            mipItems,
+        },
+        auditCtx,
+    );
+    const { findings, hasFailures, hasWarnings, allOk } = findingsResult;
+    const verdict = determineVerdict(findings);
+    const { verdictClass, verdictIcon, verdictLabel } = verdict;
+
+    const rxResult = generatePrescriptions(
+        mipItems,
+        auditCtx,
+        marmotRelays,
+        best10051,
+        staleRelays,
+        missingRelays,
+        missingITagIds,
+        invalidUserRelays,
+        invalidMarmot,
+    );
+    const { prescriptions: uniqueRx, canDeleteKps } = rxResult;
+    const canRebroadcast = rxResult.canRebroadcast && (bestK0 || bestK3);
 
     const lastAuditState = {
         bestK0,

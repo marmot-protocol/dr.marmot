@@ -11,6 +11,82 @@ const BOOTSTRAP_KINDS = [0, 2, 3, 4, 10002, 10011, 10050, 10051, 10063];
 const USER_RELAY_KINDS = [0, 3, 10000, 10011, 10050, 10051, 10063];
 const DISCOVERY_KINDS = [3, 10002, 10051];
 
+async function performBootstrapQueries(pool, pubkey, relayData, relayStates) {
+    const bootstrapQueries = DEFAULT_RELAYS.map(async (relay) => {
+        try {
+            const res = await queryRelayForKinds(pool, relay, pubkey, BOOTSTRAP_KINDS);
+            relayData[relay] = res;
+            const hasAny = res[0] || res[3] || res[10002] || res[10051];
+            relayStates.push({
+                relay,
+                state: hasAny ? 'ok' : 'error',
+                statusText: hasAny ? 'OK' : 'NO DATA',
+            });
+            return res;
+        } catch (err) {
+            console.error('Bootstrap relay query failed', { relay, pubkey, error: err });
+            relayData[relay] = {};
+            relayStates.push({
+                relay,
+                state: 'error',
+                statusText: `ERROR: ${err?.message || 'query failed'}`,
+            });
+            return {};
+        }
+    });
+    const bootstrapResults = await Promise.all(bootstrapQueries);
+    return { bootstrapResults };
+}
+
+function parseDiscoveryEvents(bootstrapResults) {
+    const allEventsForDiscovery = [];
+    for (const result of bootstrapResults) {
+        for (const kind of DISCOVERY_KINDS) {
+            if (result[kind]) allEventsForDiscovery.push(result[kind]);
+        }
+    }
+
+    const { urls: userRelays, invalid: invalidUserRelays } = extractUserRelays(allEventsForDiscovery);
+    const urlValidityItems = [];
+    if (invalidUserRelays.length > 0) {
+        for (const { url, reason } of invalidUserRelays) {
+            urlValidityItems.push({ type: 'err', text: `Invalid relay: ${url} — ${reason}` });
+        }
+    }
+    for (const relay of userRelays) {
+        urlValidityItems.push({ type: 'ok', text: `${shortUrl(relay)} — valid format` });
+    }
+
+    return { allEventsForDiscovery, userRelays, invalidUserRelays, urlValidityItems };
+}
+
+async function performUserRelayQueries(pool, toQuery, pubkey, relayData, relayStates) {
+    const userRelayQueries = toQuery.map(async (relay) => {
+        try {
+            const res = await queryRelayForKinds(pool, relay, pubkey, USER_RELAY_KINDS);
+            relayData[relay] = res;
+            const hasAny = res[0] || res[3] || res[10050] || res[10051] || res[10063];
+            relayStates.push({
+                relay,
+                state: hasAny ? 'ok' : 'error',
+                statusText: hasAny ? 'OK' : 'NO DATA',
+            });
+            return res;
+        } catch (err) {
+            console.error('User relay query failed', { relay, pubkey, error: err });
+            relayData[relay] = {};
+            relayStates.push({
+                relay,
+                state: 'error',
+                statusText: `ERROR: ${err?.message || 'query failed'}`,
+            });
+            return {};
+        }
+    });
+
+    await Promise.all(userRelayQueries);
+}
+
 /**
  * @param {import('nostr-tools').SimplePool} pool
  * @param {string} pubkey
@@ -26,47 +102,18 @@ export async function relayBootstrapAndDiscovery(pool, pubkey) {
         relayStates.push({ relay: r, state: 'connecting', statusText: 'DISCOVER' });
     }
 
-    const bootstrapQueries = DEFAULT_RELAYS.map(async (r) => {
-        const res = await queryRelayForKinds(pool, r, pubkey, BOOTSTRAP_KINDS);
-        relayData[r] = res;
-        const hasAny = res[0] || res[3] || res[10002] || res[10051];
-        relayStates.push({ relay: r, state: hasAny ? 'ok' : 'error', statusText: hasAny ? 'OK' : 'NO DATA' });
-        return res;
-    });
-
-    const bootstrapResults = await Promise.all(bootstrapQueries);
-
-    const allEventsForDiscovery = [];
-    for (const res of bootstrapResults) {
-        for (const k of DISCOVERY_KINDS) if (res[k]) allEventsForDiscovery.push(res[k]);
-    }
-
-    const { urls: userRelays, invalid: invalidUserRelays } = extractUserRelays(allEventsForDiscovery);
+    const boot = await performBootstrapQueries(pool, pubkey, relayData, relayStates);
+    const { bootstrapResults } = boot;
+    const parsed = parseDiscoveryEvents(bootstrapResults);
+    const { userRelays, invalidUserRelays, urlValidityItems } = parsed;
     const relaysToInvestigate = userRelays.length > 0 ? userRelays : DEFAULT_RELAYS;
-
-    const urlValidityItems = [];
-    if (invalidUserRelays.length > 0) {
-        for (const { url, reason } of invalidUserRelays) {
-            urlValidityItems.push({ type: 'err', text: `Invalid relay: ${url} — ${reason}` });
-        }
-    }
-    for (const r of userRelays) {
-        urlValidityItems.push({ type: 'ok', text: `${shortUrl(r)} — valid format` });
-    }
 
     const toQuery = relaysToInvestigate.filter(r => !relayData[r]);
     for (const r of toQuery) {
         relayStates.push({ relay: r, state: 'connecting', statusText: 'CONNECTING' });
     }
 
-    const userRelayQueries = toQuery.map(async (r) => {
-        const res = await queryRelayForKinds(pool, r, pubkey, USER_RELAY_KINDS);
-        relayData[r] = res;
-        const hasAny = res[0] || res[3] || res[10050] || res[10051] || res[10063];
-        relayStates.push({ relay: r, state: hasAny ? 'ok' : 'error', statusText: hasAny ? 'OK' : 'NO DATA' });
-    });
-
-    await Promise.all(userRelayQueries);
+    await performUserRelayQueries(pool, toQuery, pubkey, relayData, relayStates);
 
     return {
         relayData,

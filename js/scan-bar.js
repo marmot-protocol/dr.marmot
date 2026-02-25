@@ -1,10 +1,11 @@
 import { dialogBox, getScanBarWrap, getScanBar } from './dom.js';
+import { html } from './html.js';
 
 export function addScanBar() {
     if (getScanBarWrap()) return;
     const wrap = document.createElement('div');
     wrap.id = 'scan-bar-wrap';
-    wrap.innerHTML = `<div id="scan-bar" class="scanning"></div>`;
+    wrap.innerHTML = html`<div id="scan-bar" class="scanning"></div>`;
     dialogBox.appendChild(wrap);
 }
 

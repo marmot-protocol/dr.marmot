@@ -6,6 +6,7 @@ import { startAudit, resetAuditState } from './audit.js';
 import { getDisplayName, speak } from './personalities.js';
 import { removeScanBar } from './scan-bar.js';
 import { npubInput, nip07Btn, nextBtn, auditBtn, spritePanel, dialogSpeaker, spriteLabel, relayList } from './dom.js';
+import { html } from './html.js';
 
 const SPRITE_STYLES = ['marmot', 'sunny', 'bubbly', 'professor', 'sparky', 'nuts', 'daimon', 'house'];
 
@@ -53,7 +54,7 @@ function resetForNextPatient() {
     clearQueue();
     resetAuditState();
     removeScanBar();
-    relayList.innerHTML = '<div class="relay-idle">Awaiting investigation...</div>';
+    relayList.innerHTML = html`<div class="relay-idle">Awaiting investigation...</div>`;
     npubInput.value = '';
     nextBtn.classList.add('hidden');
     setSprite('idle');

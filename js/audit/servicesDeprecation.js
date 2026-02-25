@@ -16,47 +16,78 @@ function escapeHtml(s) {
  * @param {Object|null} best10050
  * @param {Object|null} best10063
  * @param {Object|null} best10011
+ * @param {number} nowSec
+ * @param {Object} auditCtx - mutated
+ * @returns {Array<{type:string,text:string}>}
+ */
+export function buildServicesItems(best10050, best10063, best10011, nowSec, auditCtx) {
+    const servicesItems = [];
+
+    if (best10050) {
+        const dmRelayTags = (Array.isArray(best10050.tags) ? best10050.tags : [])
+            .filter(t => Array.isArray(t) && t[0] === 'relay' && t[1]);
+        servicesItems.push({
+            type: 'ok',
+            text: `NIP-17 DM relay list (k10050): ${dmRelayTags.length} relay(s) configured`,
+        });
+        auditCtx.legacyDmsConfigured = true;
+    } else {
+        servicesItems.push({
+            type: 'warn',
+            text: 'No NIP-17 DM relay list (k10050) — contacts using NIP-17 DMs may not reach you',
+        });
+    }
+
+    if (best10063) {
+        const blossomServerTags = (Array.isArray(best10063.tags) ? best10063.tags : [])
+            .filter(t => Array.isArray(t) && t[0] === 'server' && t[1]);
+        servicesItems.push({
+            type: 'ok',
+            text: `Blossom server list (k10063): ${blossomServerTags.length} server(s) configured`,
+        });
+        auditCtx.blossomConfigured = true;
+    } else {
+        servicesItems.push({
+            type: 'warn',
+            text: 'No Blossom server list (k10063) — media uploads may fail in Blossom-native clients',
+        });
+    }
+
+    if (best10011) {
+        const identityTags = (Array.isArray(best10011.tags) ? best10011.tags : [])
+            .filter(t => Array.isArray(t) && t[0] === 'i' && t[1]);
+        if (identityTags.length > 0) {
+            for (const id of identityTags) {
+                const [platform, handle] = (String(id[1] || '').split(':', 2));
+                servicesItems.push({
+                    type: 'ok',
+                    text: `External identity: ${escapeHtml(platform || '?')} — ${escapeHtml(handle || '?')}`,
+                });
+            }
+        } else {
+            servicesItems.push({
+                type: 'warn',
+                text: 'NIP-39 event (k10011) found but contains no i-tagged identities',
+            });
+        }
+    } else {
+        servicesItems.push({
+            type: 'info',
+            text: 'No NIP-39 external identities (k10011) — optional, builds cross-platform trust',
+        });
+    }
+
+    return servicesItems;
+}
+
+/**
  * @param {Object|null} depK4
  * @param {Object|null} depK2
  * @param {number} nowSec
  * @param {Object} auditCtx - mutated
- * @returns {{ servicesItems: Array<{type:string,text:string}>, deprecationItems: Array<{type:string,text:string}> }}
+ * @returns {Array<{type:string,text:string}>}
  */
-export function buildServicesAndDeprecation(best10050, best10063, best10011, depK4, depK2, nowSec, auditCtx) {
-    const servicesItems = [];
-
-    if (best10050) {
-        const dmRelayTags = (Array.isArray(best10050.tags) ? best10050.tags : []).filter(t => Array.isArray(t) && t[0] === 'relay' && t[1]);
-        servicesItems.push({ type: 'ok', text: `NIP-17 DM relay list (k10050): ${dmRelayTags.length} relay(s) configured` });
-        auditCtx.legacyDmsConfigured = true;
-    } else {
-        servicesItems.push({ type: 'warn', text: 'No NIP-17 DM relay list (k10050) — contacts using NIP-17 DMs may not reach you' });
-    }
-
-    if (best10063) {
-        const blossomServerTags = (Array.isArray(best10063.tags) ? best10063.tags : []).filter(t => Array.isArray(t) && t[0] === 'server' && t[1]);
-        servicesItems.push({ type: 'ok', text: `Blossom server list (k10063): ${blossomServerTags.length} server(s) configured` });
-        auditCtx.blossomConfigured = true;
-    } else {
-        servicesItems.push({ type: 'warn', text: 'No Blossom server list (k10063) — media uploads may fail in Blossom-native clients' });
-    }
-
-    if (best10011) {
-        const identityTags = (Array.isArray(best10011.tags) ? best10011.tags : []).filter(t => Array.isArray(t) && t[0] === 'i' && t[1]);
-        if (identityTags.length > 0) {
-            for (const id of identityTags) {
-                const [platform, handle] = (String(id[1] || '').split(':', 2));
-                const safePlatform = escapeHtml(platform || '?');
-                const safeHandle = escapeHtml(handle || '?');
-                servicesItems.push({ type: 'ok', text: `External identity: ${safePlatform} — ${safeHandle}` });
-            }
-        } else {
-            servicesItems.push({ type: 'warn', text: 'NIP-39 event (k10011) found but contains no i-tagged identities' });
-        }
-    } else {
-        servicesItems.push({ type: 'info', text: 'No NIP-39 external identities (k10011) — optional, builds cross-platform trust' });
-    }
-
+export function buildDeprecationItems(depK4, depK2, nowSec, auditCtx) {
     const deprecationItems = [];
     if (depK4) {
         const dK4 = Math.floor((nowSec - depK4.created_at) / 86400);
@@ -72,5 +103,21 @@ export function buildServicesAndDeprecation(best10050, best10063, best10011, dep
         deprecationItems.push({ type: 'ok', text: 'No kind 2 (deprecated Relay Recommendation) events found' });
     }
 
+    return deprecationItems;
+}
+
+/**
+ * @param {Object|null} best10050
+ * @param {Object|null} best10063
+ * @param {Object|null} best10011
+ * @param {Object|null} depK4
+ * @param {Object|null} depK2
+ * @param {number} nowSec
+ * @param {Object} auditCtx - mutated
+ * @returns {{ servicesItems: Array<{type:string,text:string}>, deprecationItems: Array<{type:string,text:string}> }}
+ */
+export function buildServicesAndDeprecation(best10050, best10063, best10011, depK4, depK2, nowSec, auditCtx) {
+    const servicesItems = buildServicesItems(best10050, best10063, best10011, nowSec, auditCtx);
+    const deprecationItems = buildDeprecationItems(depK4, depK2, nowSec, auditCtx);
     return { servicesItems, deprecationItems };
 }

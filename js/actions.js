@@ -219,11 +219,34 @@ async function publishUnifiedEvents(relaysToInvestigate, events) {
     return results;
 }
 
+async function reportUnifyResults(results, mergedRelays, relaysToInvestigate, fallbackMsg) {
+    const succeeded = results.filter(r => r.ok).length;
+    const failed = results.filter(r => !r.ok).length;
+    const items = results.map(r => ({
+        type: r.ok ? 'ok' : 'err',
+        text: `${r.relay.replace(/^wss?:\/\//, '').replace(/\/$/, '')} — ${r.ok ? 'unified' : 'failed'}`,
+    }));
+    appendResultSection('RELAY UNIFICATION RESULTS', items);
+
+    if (failed === 0) {
+        setSprite('success', 'success');
+        okBeep();
+        await say(
+            speak('unifyRelaysDone', { count: succeeded, total: mergedRelays.length }) || fallbackMsg,
+        );
+    } else {
+        setSprite('error', 'error');
+        errBeep();
+        await say(
+            `${succeeded} of ${relaysToInvestigate.length} relay(s) unified; ${failed} failed.`,
+        );
+    }
+}
+
 /**
  * Merges relay lists from kind 3 (Contacts) and kind 10002 (NIP-65) into a unified set,
  * signs new events via NIP-07, and publishes them to all investigation relays.
- * @param {void} - No parameters; reads state from getAuditState().
- * @returns {Promise<void>} Resolves when done; no return value. Side-effects: setSprite, say, errBeep/okBeep, appendResultSection.
+ * @returns {Promise<void>} Resolves when done. Side effects: updates sprite, relay panel, audio, and dialog.
  */
 export async function unifyRelayLists() {
     const state = getAuditState();
@@ -236,32 +259,24 @@ export async function unifyRelayLists() {
         return;
     }
 
+    const fallbackMsg = 'Relay list unification completed.';
+
     setSprite('working', 'bounce');
-    await say(speak('unifyRelaysStart') || 'Merging your k3 and k10002 relay lists…');
+    await say(speak('unifyRelaysStart') || fallbackMsg);
 
     const { mergedRelays, unsignedK3, unsignedK10002 } = buildUnifiedRelays(state);
+    if (mergedRelays.length === 0) {
+        setSprite('error', 'error');
+        errBeep();
+        await say('No valid relays found to unify. Check your k3/k10002 relay tags.');
+        return;
+    }
+
     const signed = await signUnifiedEvents(unsignedK3, unsignedK10002);
     if (!signed) return;
 
     const { signedK3, signedK10002 } = signed;
     const events = [signedK3, signedK10002];
     const results = await publishUnifiedEvents(relaysToInvestigate, events);
-
-    const succeeded = results.filter(r => r.ok).length;
-    const failed = results.filter(r => !r.ok).length;
-    const items = results.map(r => ({
-        type: r.ok ? 'ok' : 'err',
-        text: `${r.relay.replace(/^wss?:\/\//, '').replace(/\/$/, '')} — ${r.ok ? 'unified' : 'failed'}`,
-    }));
-    appendResultSection('RELAY UNIFICATION RESULTS', items);
-
-    if (failed === 0) {
-        setSprite('success', 'success');
-        okBeep();
-        await say(speak('unifyRelaysDone', { count: succeeded, total: mergedRelays.length }) || `<span class='ok'>Unified!</span> ${succeeded} relay(s) updated. k3 and k10002 now share ${mergedRelays.length} relay(s).`);
-    } else {
-        setSprite('error', 'error');
-        errBeep();
-        await say(`${succeeded} relay(s) unified, ${failed} failed. Check those relays and retry.`);
-    }
+    await reportUnifyResults(results, mergedRelays, relaysToInvestigate, fallbackMsg);
 }

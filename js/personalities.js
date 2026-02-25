@@ -167,9 +167,13 @@ const LINES = {
         deleteKpFail: "<span class='err'>Deletion unsuccessful.</span> Extension declined or relay communication failure.",
         noNip07ForAction: "This procedure requires a <span class='hi'>NIP-07 extension</span> for event signing. Please install one.",
         nextPatient: "Next patient. Present an npub and I shall conduct the diagnostic.",
-        relayDivergence: "<span class='warn'>Relay divergence observed.</span> {k3Only} relay(s) exclusive to Contacts (k3); {k10002Only} exclusive to NIP-65 (k10002). Inconsistent relay advertisement will impair client interoperability. Unification is warranted.",
-        unifyRelaysStart: "Merging relay sets from k3 and k10002. Broadcasting the unified list to all registered relays.",
-        unifyRelaysDone: "<span class='ok'>Unification complete.</span> {count} relay(s) updated. k3 and k10002 now share a consistent list of {total} relay(s).",
+        relayDivergence: "<span class='warn'>Relay divergence observed.</span> {k3Only} relay(s) exclusive to "
+            + "Contacts (k3); {k10002Only} exclusive to NIP-65 (k10002). Inconsistent relay advertisement "
+            + "will impair client interoperability. Unification is warranted.",
+        unifyRelaysStart: "Merging relay sets from k3 and k10002. Broadcasting the unified list to all "
+            + "registered relays.",
+        unifyRelaysDone: "<span class='ok'>Unification complete.</span> {count} relay(s) updated. k3 and "
+            + "k10002 now share a consistent list of {total} relay(s).",
     },
     sparky: {
         intro: "Hey! Sparky here! 🔥 Give me an npub and I'll run the full diagnostic — relays, sync, Marmot, vitals, the whole deal!",
@@ -348,9 +352,11 @@ const LINES = {
         noNip07ForAction: "Need NIP-07 for this. Install an extension. I'll wait. *pops vicodin*",
         nextPatient: "Next patient. Because apparently one isn't enough suffering for today. *limps to whiteboard*",
         relayDivergence: "<span class='warn'>Relay divergence. Shocking.</span> {k3Only} relay(s) only in k3, "
-            + "{k10002Only} only in k10002. Your clients are picking different relay sets. Classic. Unify them.",
+            + "{k10002Only} only in k10002. Your clients are picking different relay sets. Classic. "
+            + "Unify them.",
         unifyRelaysStart: "Merging your relay lists. Try not to screw it up. *signs NIP-07 request*",
-        unifyRelaysDone: "<span class='ok'>Done.</span> {count} relay(s) updated. k3 and k10002 now agree on {total} relay(s). "
+        unifyRelaysDone: "<span class='ok'>Done.</span> {count} relay(s) updated. k3 and k10002 now agree on "
+            + "{total} relay(s). "
             + "First time for everything.",
     },
 };
