@@ -31,3 +31,12 @@ export function validateRelayUrl(url) {
 export function isValidRelayUrl(url) {
     return validateRelayUrl(url).valid;
 }
+
+/**
+ * Returns a short human-readable display string for a relay URL (strips scheme and trailing slash).
+ * @param {string} url
+ * @returns {string}
+ */
+export function shortUrl(url) {
+    return String(url || '').replace(/^wss?:\/\//, '').replace(/\/$/, '');
+}

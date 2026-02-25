@@ -5,6 +5,7 @@ import { speak } from './personalities.js';
 import { setSprite } from './sprite.js';
 import { setRelayState, appendResultSection } from './relay-panel.js';
 import { okBeep, errBeep } from './audio.js';
+import { validateRelayUrl } from './relay-validation.js';
 
 const PUBLISH_TIMEOUT_MS = 15_000;
 
@@ -144,4 +145,146 @@ export async function deleteKeyPackages() {
         errBeep();
         await say(speak('deleteKpFail') || `${failed} relay(s) failed to accept deletion events.`);
     }
+}
+
+function buildUnifiedRelays(state) {
+    const { bestK3, bestK10002, pubkey } = state;
+    const merged = new Set();
+    if (Array.isArray(bestK3?.tags)) {
+        for (const t of bestK3.tags) {
+            if (Array.isArray(t) && typeof t[0] === 'string' && typeof t[1] === 'string' && t[1]
+                && t[0] === 'relay' && validateRelayUrl(t[1].trim()).valid) {
+                merged.add(t[1].trim());
+            }
+        }
+    }
+    if (Array.isArray(bestK10002?.tags)) {
+        for (const t of bestK10002.tags) {
+            if (Array.isArray(t) && typeof t[0] === 'string' && typeof t[1] === 'string' && t[1]
+                && t[0] === 'r' && validateRelayUrl(t[1].trim()).valid) {
+                merged.add(t[1].trim());
+            }
+        }
+    }
+    const mergedRelays = [...merged];
+    const pTags = Array.isArray(bestK3?.tags)
+        ? bestK3.tags.filter(t => Array.isArray(t) && typeof t[0] === 'string' && t[0] === 'p')
+        : [];
+    const unsignedK3 = {
+        kind: 3,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [...pTags, ...mergedRelays.map(r => ['relay', r])],
+        content: bestK3?.content || '',
+        pubkey,
+    };
+    const unsignedK10002 = {
+        kind: 10002,
+        created_at: Math.floor(Date.now() / 1000) + 1,
+        tags: mergedRelays.map(r => ['r', r]),
+        content: '',
+        pubkey,
+    };
+    return { mergedRelays, unsignedK3, unsignedK10002 };
+}
+
+async function signUnifiedEvents(unsignedK3, unsignedK10002) {
+    await say(speak('deleteKpSign') || 'Requesting NIP-07 signatures…');
+    try {
+        const signedK3 = await window.nostr.signEvent(unsignedK3);
+        const signedK10002 = await window.nostr.signEvent(unsignedK10002);
+        return { signedK3, signedK10002 };
+    } catch (e) {
+        setSprite('error', 'error');
+        errBeep();
+        await say(speak('deleteKpFail') || `Signing failed: ${e?.message || 'extension declined'}`);
+        return null;
+    }
+}
+
+async function publishUnifiedEvents(relaysToInvestigate, events) {
+    const pool = new SimplePool();
+    const results = [];
+    for (const relay of relaysToInvestigate) {
+        setRelayState(relay, 'connecting', 'UNIFY');
+        let isRelayOk = true;
+        for (const ev of events) {
+            try {
+                await Promise.race([
+                    pool.publish([relay], ev),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('timeout')), PUBLISH_TIMEOUT_MS),
+                    ),
+                ]);
+            } catch (e) {
+                console.error('Unify publish failed', { relay, kind: ev?.kind, id: ev?.id }, e);
+                isRelayOk = false;
+            }
+        }
+        setRelayState(relay, isRelayOk ? 'ok' : 'error', isRelayOk ? 'UNIFIED' : 'FAIL');
+        results.push({ relay, ok: isRelayOk });
+    }
+    pool.close(relaysToInvestigate);
+    return results;
+}
+
+async function reportUnifyResults(results, mergedRelays, relaysToInvestigate, fallbackMsg) {
+    const succeeded = results.filter(r => r.ok).length;
+    const failed = results.filter(r => !r.ok).length;
+    const items = results.map(r => ({
+        type: r.ok ? 'ok' : 'err',
+        text: `${r.relay.replace(/^wss?:\/\//, '').replace(/\/$/, '')} — ${r.ok ? 'unified' : 'failed'}`,
+    }));
+    appendResultSection('RELAY UNIFICATION RESULTS', items);
+
+    if (failed === 0) {
+        setSprite('success', 'success');
+        okBeep();
+        await say(
+            speak('unifyRelaysDone', { count: succeeded, total: mergedRelays.length }) || fallbackMsg,
+        );
+    } else {
+        setSprite('error', 'error');
+        errBeep();
+        await say(
+            `${succeeded} of ${relaysToInvestigate.length} relay(s) unified; ${failed} failed.`,
+        );
+    }
+}
+
+/**
+ * Merges relay lists from kind 3 (Contacts) and kind 10002 (NIP-65) into a unified set,
+ * signs new events via NIP-07, and publishes them to all investigation relays.
+ * @returns {Promise<void>} Resolves when done. Side effects: updates sprite, relay panel, audio, and dialog.
+ */
+export async function unifyRelayLists() {
+    const state = getAuditState();
+    if (!state) { await say('No audit data available.'); return; }
+
+    const { bestK3, bestK10002, relaysToInvestigate } = state;
+    if (!bestK3 && !bestK10002) { await say('No relay lists found to unify.'); return; }
+    if (!window.nostr) {
+        await say(speak('noNip07ForAction') || 'This action requires a NIP-07 extension to sign events.');
+        return;
+    }
+
+    const fallbackMsg = 'Relay list unification completed.';
+
+    setSprite('working', 'bounce');
+    await say(speak('unifyRelaysStart') || fallbackMsg);
+
+    const { mergedRelays, unsignedK3, unsignedK10002 } = buildUnifiedRelays(state);
+    if (mergedRelays.length === 0) {
+        setSprite('error', 'error');
+        errBeep();
+        await say('No valid relays found to unify. Check your k3/k10002 relay tags.');
+        return;
+    }
+
+    const signed = await signUnifiedEvents(unsignedK3, unsignedK10002);
+    if (!signed) return;
+
+    const { signedK3, signedK10002 } = signed;
+    const events = [signedK3, signedK10002];
+    const results = await publishUnifiedEvents(relaysToInvestigate, events);
+    await reportUnifyResults(results, mergedRelays, relaysToInvestigate, fallbackMsg);
 }

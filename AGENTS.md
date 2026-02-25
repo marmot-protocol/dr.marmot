@@ -198,6 +198,14 @@ State tracked in `lastAuditState`; reset via `resetAuditState()` before new audi
 | `audio.js` | Web Audio beep effects |
 | `scan-bar.js` | Progress bar UI |
 | `dom.js` | Central DOM element references |
+| `audit/relayBootstrap.js` | Relay bootstrap and discovery |
+| `audit/relaySync.js` | Relay sync (k0/k3/k10000) assessment |
+| `audit/profileKind0.js` | Profile (kind 0) vitals |
+| `audit/nip65Contacts.js` | NIP-65 and k3/k10002 relay lists |
+| `audit/keypackages.js` | KeyPackage (kind 443) MIP-00/01 evaluation |
+| `audit/servicesDeprecation.js` | Services (k10050/k10063/k10011) and deprecation (k4/k2) |
+| `audit/findingsPrescriptions.js` | Findings compilation, prescriptions, verdict |
+| `audit/chartRender.js` | Patient chart HTML |
 
 ---
 

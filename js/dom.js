@@ -21,3 +21,17 @@ export function getScanBar() { return document.getElementById('scan-bar'); }
 
 /** Returns relay row by id (e.g. relay-wss___example_com). */
 export function getRelayRow(id) { return document.getElementById(id); }
+
+/**
+ * Returns chart action buttons from a chart container element.
+ * @param {HTMLElement} chartEl - Chart container (e.g. cardContainer.firstElementChild)
+ * @returns {{ rebroadcast: Element|null, deleteKps: Element|null, unifyRelays: Element|null }}
+ */
+export function getChartActionButtons(chartEl) {
+    if (!chartEl) return { rebroadcast: null, deleteKps: null, unifyRelays: null };
+    return {
+        rebroadcast: chartEl.querySelector('[data-action="rebroadcast"]'),
+        deleteKps: chartEl.querySelector('[data-action="delete-kps"]'),
+        unifyRelays: chartEl.querySelector('[data-action="unify-relays"]'),
+    };
+}
