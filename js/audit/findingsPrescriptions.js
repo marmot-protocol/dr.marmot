@@ -5,7 +5,10 @@
 const FAILURE_CATEGORIES = {
     'relay-config': ['Invalid relay', 'invalid relay', 'kind 10051 relay', 'relay URLs'],
     'sync': ['sync', 'outdated', 'missing', 'stale', 'Profile (kind 0)', 'Contacts (kind 3)', 'not found'],
-    'marmot-foundation': ['kind 10051', 'No KeyPackage Relay', 'no relay tags', 'KeyPackage relay'],
+    'marmot-foundation': [
+        'kind 10051', 'kind 10050', 'No KeyPackage Relay', 'No Inbox Relay',
+        'no relay tags', 'KeyPackage relay', 'Inbox relay', 'giftwrap',
+    ],
     'keypackage': ['KeyPackage', 'KP ', 'kind 443', 'encoding', '0xf2ee', '0x000a', 'mls_', 'relays tag'],
 };
 
@@ -38,6 +41,7 @@ export function prescriptionPriority(text) {
     const t = (text || '').toLowerCase();
     if (t.includes('invalid relay') && t.includes('k3 / k10002')) return 1;
     if (t.includes('rebroadcast') || (t.includes('profile') && t.includes('contacts'))) return 2;
+    if (t.includes('kind 10050') && (t.includes('publish') || t.includes('add relay') || t.includes('invalid relay'))) return 3;
     if (t.includes('kind 10051') && (t.includes('publish') || t.includes('add relay') || t.includes('invalid relay'))) return 3;
     if (t.includes('delete events') || t.includes('keypackage') || t.includes('encoding') || t.includes('0xf2ee') || t.includes('0x000a') || t.includes('mls_') || t.includes('relays tag')) return 4;
     return 5;
@@ -49,6 +53,7 @@ export function prescriptionPriority(text) {
  */
 export function getRootCauseHint(ctx) {
     if (ctx.invalidRelayCount > 0) return 'Invalid URLs break relay discovery — fix those before anything else.';
+    if (!ctx.has10050) return "Without kind 10050, giftwrap delivery fails — publish that alongside 10051.";
     if (!ctx.has10051 && (ctx.kpCount === 0 || ctx.marmotRelayCount === 0)) return "Without kind 10051, KeyPackages can't be advertised — publish that first.";
     if (ctx.hasCrossedWires && (ctx.has10051 || ctx.marmotRelayCount > 0)) return 'Sync issues can delay KeyPackage discovery; fix sync first.';
     return null;
@@ -70,6 +75,14 @@ export function pickClosingMessage(ctx, failures, categories) {
     const marmotOnly = categories.includes('marmot-foundation') && !categories.includes('relay-config') && !categories.includes('sync');
     const kpOnly = categories.includes('keypackage') && !categories.includes('relay-config') && !categories.includes('sync') && !categories.includes('marmot-foundation');
     if (marmotOnly && !kpOnly) {
+        const missing10050 = failures.some(f => f.toLowerCase().includes('kind 10050'));
+        const missing10051 = failures.some(f => f.toLowerCase().includes('kind 10051'));
+        if (missing10050 && missing10051) {
+            return 'Marmot messaging unavailable. Publish kind 10050 and 10051 first. See prescription.';
+        }
+        if (missing10050) {
+            return 'Giftwrap delivery impossible without kind 10050. Publish an Inbox Relay List. See prescription.';
+        }
         return 'Marmot messaging unavailable. Publish kind 10051 first, then KeyPackages. See prescription.';
     }
     if (kpOnly) {
@@ -162,6 +175,9 @@ export function generateFindings(params, auditCtx) {
         best10051,
         marmotRelays,
         mipItems,
+        inboxRelays,
+        inboxItems,
+        orphanedKpRelays,
     } = params;
 
     const findings = { pass: [], warn: [], fail: [] };
@@ -220,6 +236,52 @@ export function generateFindings(params, auditCtx) {
         } else {
             findings.pass.push(`${marmotRelays.length} KeyPackage relay(s) advertised`);
         }
+    }
+
+    // Inbox relay (k10050) findings
+    if (!auditCtx.has10050) {
+        findings.fail.push('No Inbox Relay List (kind 10050) — giftwrap delivery will fail');
+    } else {
+        findings.pass.push('Inbox Relay List (kind 10050) published');
+        if (inboxRelays && inboxRelays.length > 0) {
+            findings.pass.push(`${inboxRelays.length} Inbox relay(s) advertised`);
+        } else if (inboxRelays && inboxRelays.length === 0) {
+            findings.fail.push('kind 10050 contains no valid relay tags');
+        }
+    }
+
+    // Forward individual invalid inbox relay errors to findings
+    if (inboxItems) {
+        for (const item of inboxItems) {
+            if (item.type === 'err' && item.text.includes('Invalid Inbox relay')) {
+                findings.fail.push(item.text);
+            }
+        }
+    }
+
+    // Orphaned KeyPackages
+    if (orphanedKpRelays && orphanedKpRelays.length > 0) {
+        findings.warn.push(
+            `KeyPackage(s) found on ${orphanedKpRelays.length} relay(s) outside kind 10051 — stranded and undiscoverable`,
+        );
+    }
+
+    // WhiteNoise login gate
+    const hasUsable10002 = relaysToInvestigate.some(r =>
+        (relayData[r]?.[10002]?.tags || []).some(t =>
+            t[0] === 'r' && typeof t[1] === 'string' && t[1].trim() !== ''));
+    const hasUsable10050 = inboxRelays ? inboxRelays.length > 0 : false;
+    const hasUsable10051 = marmotRelays.length > 0;
+    if (hasUsable10002 && hasUsable10050 && hasUsable10051) {
+        findings.pass.push('WhiteNoise login gate: all three relay lists (k10002, k10050, k10051) present');
+    } else {
+        const missing = [];
+        if (!hasUsable10002) missing.push('k10002');
+        if (!hasUsable10050) missing.push('k10050');
+        if (!hasUsable10051) missing.push('k10051');
+        findings.fail.push(
+            `WhiteNoise login gate incomplete: missing ${missing.join(', ')}`,
+        );
     }
 
     for (const item of mipItems) {
@@ -320,6 +382,10 @@ export function generatePrescriptions(
     missingITagIds,
     invalidUserRelays,
     invalidMarmot,
+    inboxRelays,
+    inboxItems,
+    orphanedKpRelays,
+    best10050,
 ) {
     const prescriptions = [];
     const ruleContext = {
@@ -340,8 +406,29 @@ export function generatePrescriptions(
     }
     if (!best10051) {
         prescriptions.push('Publish a KeyPackage Relay List (kind 10051) to enable Marmot messaging');
-    } else if (marmotRelays.length === 0) {
+    } else if (marmotRelays.length === 0
+        && invalidMarmot.length === 0) {
         prescriptions.push('Add relay tags to your kind 10051 event');
+    }
+
+    // k10050 prescriptions
+    if (!best10050) {
+        prescriptions.push(
+            'Publish an Inbox Relay List (kind 10050) — required for giftwrap delivery and WhiteNoise login',
+        );
+    } else if (inboxRelays && inboxRelays.length === 0
+        && !(inboxItems && inboxItems.some(i => i.type === 'err' && i.text.includes('Invalid Inbox relay')))) {
+        prescriptions.push('Add relay tags to your kind 10050 event');
+    }
+    if (inboxItems && inboxItems.some(i => i.type === 'err' && i.text.includes('Invalid Inbox relay'))) {
+        prescriptions.push('Fix invalid relay URLs in kind 10050 — ensure all relay tags use valid wss:// or ws:// URLs');
+    }
+
+    // Orphaned KeyPackages
+    if (orphanedKpRelays && orphanedKpRelays.length > 0) {
+        prescriptions.push(
+            'Delete orphaned KeyPackages from relays not in your kind 10051 list, or add those relays to kind 10051',
+        );
     }
 
     for (const rule of PRESCRIPTION_RULES) {
@@ -415,6 +502,9 @@ export function compileFindingsAndPrescriptions(params) {
         best10050,
         best10063,
         best10051,
+        inboxRelays,
+        inboxItems,
+        orphanedKpRelays,
         maxK0,
         maxK3,
         auditCtx,
@@ -451,6 +541,9 @@ export function compileFindingsAndPrescriptions(params) {
             best10051,
             marmotRelays,
             mipItems,
+            inboxRelays,
+            inboxItems,
+            orphanedKpRelays,
         },
         auditCtx,
     );
@@ -468,6 +561,10 @@ export function compileFindingsAndPrescriptions(params) {
         missingITagIds,
         invalidUserRelays,
         invalidMarmot,
+        inboxRelays,
+        inboxItems,
+        orphanedKpRelays,
+        best10050,
     );
     const { prescriptions: uniqueRx, canDeleteKps } = rxResult;
     const canRebroadcast = Boolean(rxResult.canRebroadcast) && !!(bestK0 || bestK3);
@@ -477,7 +574,10 @@ export function compileFindingsAndPrescriptions(params) {
         bestK3,
         bestK10002,
         best10050,
+        best10051,
         best10063,
+        inboxRelays: inboxRelays ? [...inboxRelays] : [],
+        orphanedKpRelays: orphanedKpRelays ? [...orphanedKpRelays] : [],
         relaysToInvestigate: [...relaysToInvestigate],
         marmotRelays: [...marmotRelays],
         kpEventsCollected: [...kpEventsCollected],

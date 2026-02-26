@@ -17,7 +17,7 @@ import { assessRelaySync } from './audit/relaySync.js';
 import { analyzeProfileVitals } from './audit/profileKind0.js';
 import { analyzeNip65AndContacts } from './audit/nip65Contacts.js';
 import { evaluateMarmot } from './audit/keypackages.js';
-import { buildServicesAndDeprecation } from './audit/servicesDeprecation.js';
+import { buildServicesAndDeprecation, evaluateInboxRelays } from './audit/servicesDeprecation.js';
 import {
     compileFindingsAndPrescriptions,
     categorizeFailures,
@@ -41,7 +41,7 @@ async function runBootstrapPhase(pool, pubkey, auditCtx) {
     await say(speak('takingPulse'));
 
     const boot = await relayBootstrapAndDiscovery(pool, pubkey);
-    const { relayData, relaysToInvestigate, userRelays, invalidUserRelays, urlValidityItems, relayStates } = boot;
+    const { userRelays, invalidUserRelays, urlValidityItems, relayStates } = boot;
     auditCtx.userRelayCount = userRelays.length;
     auditCtx.invalidRelayCount = invalidUserRelays.length;
     auditCtx.usedBootstrapFallback = userRelays.length === 0;
@@ -106,6 +106,7 @@ async function runResiliencePhase(
     relayData,
     maxK0,
     maxK3,
+    max10050,
     max10051,
     bestK3,
     cwItems,
@@ -115,7 +116,7 @@ async function runResiliencePhase(
     let relayReachable = 0;
     for (const relay of relaysToInvestigate) {
         const data = relayData[relay];
-        if (data && (data[0] || data[3] || data[10051])) relayReachable++;
+        if (data && (data[0] || data[3] || data[10002] || data[10050] || data[10051])) relayReachable++;
     }
 
     const relayReachabilityItem = relayReachable < relaysToInvestigate.length
@@ -170,6 +171,13 @@ async function runResiliencePhase(
         freshnessItems.push({
             type: days !== null && days > 365 ? 'warn' : 'ok',
             text: `Contacts (k3): ${formatFreshnessText(days)}`,
+        });
+    }
+    if (max10050 > 0) {
+        const days = daysAgo(max10050);
+        freshnessItems.push({
+            type: days !== null && days > 365 ? 'warn' : 'ok',
+            text: `Inbox relays (k10050): ${formatFreshnessText(days)}`,
         });
     }
     if (max10051 > 0) {
@@ -497,6 +505,8 @@ export async function startAudit(opts = {}) {
         vitalErrCount: 0,
         vitalWarnCount: 0,
         nip05Verified: false,
+        has10050: false,
+        inboxRelayCount: 0,
         has10051: false,
         marmotRelayCount: 0,
         kpCount: 0,
@@ -524,6 +534,7 @@ export async function startAudit(opts = {}) {
         const {
             maxK0,
             maxK3,
+            max10050,
             max10051,
             best10051,
             bestK10002,
@@ -549,6 +560,7 @@ export async function startAudit(opts = {}) {
             relayData,
             maxK0,
             maxK3,
+            max10050,
             max10051,
             bestK3,
             cwItems,
@@ -570,6 +582,40 @@ export async function startAudit(opts = {}) {
         );
         const { mipItems, marmotRelays, kpEventsCollected, invalidMarmot } = marmotResult;
         marmotRelaysForCleanup = marmotRelays;
+
+        // --- INBOX RELAYS (NIP-17) ---
+        await say(speak('inboxRelayCheck'));
+        const { inboxItems, inboxRelays, hasOverlapWarning } = evaluateInboxRelays(
+            best10050,
+            k10002RelaySet,
+            auditCtx,
+        );
+        if (!best10050) {
+            await say(speak('no10050'));
+        } else if (inboxRelays.length > 0) {
+            await say(speak('inboxRelaysFound', { count: inboxRelays.length }));
+            if (hasOverlapWarning) {
+                await say(speak('inboxNoOverlap'));
+            }
+        }
+        appendResultSection('INBOX RELAYS (NIP-17)', inboxItems);
+
+        // --- ORPHANED KEYPACKAGES ---
+        const advertisedRelaySet = new Set(
+            marmotRelays.map(u => u.trim().toLowerCase()),
+        );
+        const orphanedKpRelays = [];
+        if (marmotRelays.length > 0) {
+            for (const r of relaysToInvestigate) {
+                if (!advertisedRelaySet.has(r.trim().toLowerCase())
+                    && relayData[r]?.[443]) {
+                    orphanedKpRelays.push(r);
+                }
+            }
+        }
+        if (orphanedKpRelays.length > 0) {
+            await say(speak('orphanedKps', { count: orphanedKpRelays.length }));
+        }
 
         const services = buildServicesAndDeprecation(
             best10050,
@@ -602,6 +648,9 @@ export async function startAudit(opts = {}) {
                 best10050,
                 best10063,
                 best10051,
+                inboxRelays,
+                inboxItems,
+                orphanedKpRelays,
                 maxK0,
                 maxK3,
                 auditCtx,

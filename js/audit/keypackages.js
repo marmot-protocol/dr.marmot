@@ -22,20 +22,19 @@ function parse10051Relays(best10051, auditCtx, mipItems) {
     }
 
     const rawMarmotRelays = (Array.isArray(best10051.tags) ? best10051.tags : [])
-        .filter(tag => Array.isArray(tag) && tag[0] === 'relay' && tag[1])
+        .filter(tag => Array.isArray(tag) && tag[0] === 'relay' && typeof tag[1] === 'string')
         .map(tag => (tag[1] || '').trim());
-    const invalidSeen = new Set();
+    const marmotSeen = new Set();
     marmotRelays = rawMarmotRelays.filter((normalized) => {
+        const key = normalized.toLowerCase();
+        if (marmotSeen.has(key)) return false;
+        marmotSeen.add(key);
         const validated = validateRelayUrl(normalized);
         if (!validated.valid) {
-            const key = normalized.toLowerCase();
-            if (!invalidSeen.has(key)) {
-                invalidSeen.add(key);
-                invalidMarmot.push({
-                    url: normalized.slice(0, 50) + (normalized.length > 50 ? '…' : ''),
-                    reason: validated.reason,
-                });
-            }
+            invalidMarmot.push({
+                url: normalized.slice(0, 50) + (normalized.length > 50 ? '…' : ''),
+                reason: validated.reason,
+            });
             return false;
         }
         return true;

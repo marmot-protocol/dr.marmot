@@ -8,7 +8,7 @@ Paste an npub. One of our doctors will examine your Nostr identity across every 
 
 ### Relay Health
 
-- Discovers your relay list from kind 3 / 10002 / 10051 events
+- Discovers your relay list from kind 3 / 10002 / 10050 / 10051 events
 - Detects out-of-sync profiles across relays
 - Warns about single-relay fragility: one outage and you're unreachable
 
@@ -21,6 +21,7 @@ Paste an npub. One of our doctors will examine your Nostr identity across every 
 
 ### Marmot Protocol Compliance (MIP-00 / MIP-01)
 
+- Inbox relay list (kind 10050) — giftwrap delivery for WhiteNoise messaging
 - KeyPackage relay list (kind 10051)
 - KeyPackage events (kind 443) with base64 encoding validation
 - MLS protocol version and ciphersuite checks (0x0001–0x0007)
@@ -54,9 +55,10 @@ Drop the files on any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pag
 
 1. Paste an npub or sign in with a NIP-07 browser extension
 2. The doctor connects to bootstrap relays and discovers your relay list
-3. Every relay is queried for your profile, contacts, and KeyPackage events
-4. Sync analysis, profile validation, and MIP compliance checks run in sequence
-5. The doctor charts a diagnosis with findings and a prescription
+3. Every discovered relay is queried for your profile, contacts, and relay lists
+4. Your advertised KeyPackage relays are queried for KeyPackage events
+5. Sync analysis, profile validation, inbox relay checks, and MIP compliance checks run in sequence
+6. The doctor charts a diagnosis with findings and a prescription
 
 ## Project Structure
 
@@ -69,6 +71,15 @@ dr.marmot/
     ├── main.js               # Init, NIP-07 sign-in, event wiring
     ├── config.js             # Default relays, timeouts, limits
     ├── audit.js              # Multi-phase audit orchestration
+    ├── audit/
+    │   ├── relayBootstrap.js       # Bootstrap relay discovery
+    │   ├── relaySync.js            # Cross-relay sync assessment
+    │   ├── profileKind0.js         # Profile (k0) validation
+    │   ├── nip65Contacts.js        # NIP-65 / k3 relay analysis
+    │   ├── keypackages.js          # k10051 + k443 MIP compliance
+    │   ├── servicesDeprecation.js   # k10050, k10063, k10011, deprecation
+    │   ├── findingsPrescriptions.js # Findings, prescriptions, verdict
+    │   └── chartRender.js          # Patient chart HTML
     ├── personalities.js      # Per-doctor dialog lines and speech
     ├── dialog.js             # Typewriter text renderer
     ├── sprite.js             # Sprite animation controller

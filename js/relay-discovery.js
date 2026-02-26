@@ -29,7 +29,7 @@ export function extractUserRelays(events) {
             for (const t of ev.tags) if (t[0] === 'relay' && t[1]) add(t[1]);
         } else if (ev.kind === 10002) {
             for (const t of ev.tags) if (t[0] === 'r' && t[1]) add(t[1]);
-        } else if (ev.kind === 10051) {
+        } else if (ev.kind === 10050 || ev.kind === 10051) {
             for (const t of ev.tags) if (t[0] === 'relay' && t[1]) add(t[1]);
         }
     }
