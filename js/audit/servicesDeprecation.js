@@ -1,9 +1,93 @@
 /**
  * Services (k10050, k10063, k10011) and deprecation (k4, k2) scan.
+ * Inbox relay (k10050) detailed validation.
  */
 
 import { escapeHtml } from '../html.js';
-import { validateRelayUrl } from '../relay-validation.js';
+import { validateRelayUrl, shortUrl } from '../relay-validation.js';
+
+/**
+ * Validate inbox relays (kind 10050) in detail — relay URL validation, dedup,
+ * NIP-65 overlap check. Returns inboxItems for rendering and inboxRelays for
+ * use by other modules (login gate, findings).
+ *
+ * @param {Object|null} best10050
+ * @param {Set<string>} nip65Set - Normalised relay URLs from kind 10002
+ * @param {Object} auditCtx - mutated: has10050, inboxRelayCount
+ * @returns {{ inboxItems: Array<{type:string,text:string}>, inboxRelays: string[], hasOverlapWarning: boolean }}
+ */
+export function evaluateInboxRelays(best10050, nip65Set, auditCtx) {
+    const inboxItems = [];
+    let inboxRelays = [];
+    let hasOverlapWarning = false;
+
+    if (!best10050) {
+        auditCtx.has10050 = false;
+        inboxItems.push({
+            type: 'err',
+            text: 'No Inbox Relay List (kind 10050) — giftwrap delivery will fail',
+        });
+        return { inboxItems, inboxRelays, hasOverlapWarning };
+    }
+
+    auditCtx.has10050 = true;
+    inboxItems.push({ type: 'ok', text: 'Inbox Relay List (kind 10050) found' });
+
+    const rawTags = (Array.isArray(best10050.tags) ? best10050.tags : [])
+        .filter(t => Array.isArray(t) && t[0] === 'relay' && typeof t[1] === 'string');
+
+    const inboxSeen = new Set();
+    inboxRelays = rawTags.map(t => t[1].trim()).filter((u) => {
+        const key = u.toLowerCase();
+        if (inboxSeen.has(key)) return false;
+        inboxSeen.add(key);
+        const v = validateRelayUrl(u);
+        if (!v.valid) {
+            inboxItems.push({
+                type: 'err',
+                text: `Invalid Inbox relay: ${escapeHtml(shortUrl(u))} — ${escapeHtml(v.reason)}`,
+            });
+            return false;
+        }
+        return true;
+    });
+
+    if (inboxRelays.length === 0 && rawTags.length > 0) {
+        inboxItems.push({
+            type: 'err',
+            text: 'All kind 10050 relay URLs are invalid!',
+        });
+    } else if (inboxRelays.length === 0) {
+        inboxItems.push({
+            type: 'err',
+            text: 'kind 10050 has no relay tags!',
+        });
+    } else {
+        inboxItems.push({
+            type: 'ok',
+            text: `${inboxRelays.length} valid Inbox relay(s) listed`,
+        });
+    }
+
+    auditCtx.inboxRelayCount = inboxRelays.length;
+
+    // NIP-65 overlap check
+    if (inboxRelays.length > 0 && nip65Set.size > 0) {
+        const hasOverlap = inboxRelays.some(
+            u => nip65Set.has(u.trim().toLowerCase()),
+        );
+        if (!hasOverlap) {
+            hasOverlapWarning = true;
+            inboxItems.push({
+                type: 'warn',
+                text: 'Inbox relays (k10050) don\'t overlap with NIP-65 (k10002)'
+                    + ' — giftwraps may not reach clients that only check NIP-65 relays',
+            });
+        }
+    }
+
+    return { inboxItems, inboxRelays, hasOverlapWarning };
+}
 
 /**
  * @param {Object|null} best10050

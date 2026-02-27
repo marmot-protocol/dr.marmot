@@ -8,9 +8,9 @@ import { escapeHtml } from '../html.js';
 import { extractUserRelays } from '../relay-discovery.js';
 import { queryRelayForKinds } from '../relay-query.js';
 
-const BOOTSTRAP_KINDS = [0, 2, 3, 4, 10002, 10011, 10050, 10051, 10063];
-const USER_RELAY_KINDS = [0, 3, 10000, 10011, 10050, 10051, 10063];
-const DISCOVERY_KINDS = [3, 10002, 10051];
+const BOOTSTRAP_KINDS = [0, 2, 3, 4, 443, 10002, 10011, 10050, 10051, 10063];
+const USER_RELAY_KINDS = [0, 3, 443, 10000, 10002, 10011, 10050, 10051, 10063];
+const DISCOVERY_KINDS = [3, 10002, 10050, 10051];
 
 async function performBootstrapQueries(pool, pubkey, relayData, relayStates) {
     const bootstrapQueries = DEFAULT_RELAYS.map(async (relay) => {
