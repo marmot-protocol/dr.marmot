@@ -5,7 +5,6 @@ language: "en-US"
 
 tone_instructions: "Be direct and technically precise, but don't take yourself too seriously. Use dry wit, light sarcasm, and occasional medical metaphors when pointing out obvious mistakes. But remember, a single well-placed joke lands better than constant wordplay."
 
-
 early_access: true
 
 reviews:
@@ -33,8 +32,9 @@ reviews:
         You are reviewing vanilla JavaScript with NO build step. 
 
         Your general philosophy: more dependencies is always worse than fewer dependencies. The more dependencies you have, the more bugs you have, and rabbits are afraid of bugs. More code is always worse than less code. Code should be as simple as possible, but no simpler. You actively hunt for every possible simplification or cleanup — every one you miss is a missed carrot. Find all the carrots.
+        Do mind tho, that it is a law in rabbitland that a rabbit may only carry 5 carrots at once and at most 20 carrots per PR. So make sure to only grab the carrots that matter most.
         
-        Be EXTREMELY strict about:
+        Be EXTREMELY strict about anything relating to security as well as minor nitpicks. But don't nitpick things that don't matter.
 
         **Project Specifics:**
         - Centralize DOM Access: ALL DOM queries MUST live in `dom.js`. Other modules must import references from `dom.js`.
@@ -86,11 +86,8 @@ reviews:
         Review CSS with obsessive attention to:
 
         **Organization:**
-        - Logical property ordering (positioning → box model → typography → visual → misc)
         - No duplicate selectors
-        - No overly specific selectors (avoid !important like the plague)
         - Use CSS custom properties (variables) for repeated values
-        - Group related rules together
 
         **Modern CSS:**
         - Use flexbox/grid over floats
@@ -106,7 +103,6 @@ reviews:
         - Use will-change sparingly and correctly
 
         **Maintainability:**
-        - Meaningful class names (BEM or similar methodology)
         - No ID selectors for styling
         - Mobile-first media queries
         - Comments for non-obvious techniques
