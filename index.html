@@ -55,6 +55,7 @@
                     </div>
                 </div>
                 <div id="signer-box">
+                    <footer id="retro-footer"><a href="?jeff">Boring mode</a></footer>
                     <button id="next-btn" type="button" class="hidden">▶ NEXT PATIENT</button>
                     <button id="nip07-btn" type="button" title="Get npub from Nostr extension" class="hidden">Sign in
                         with NIP-07</button>
@@ -62,10 +63,19 @@
             </div>
 
         </div>
+        <footer id="jeff-footer">Like to have fun? <a href="./">Go back to normal mode</a></footer>
     </div>
 
     <script>
         (function () {
+            var isJeff = new URLSearchParams(window.location.search).has('jeff');
+            if (isJeff) {
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'jeff.css';
+                document.head.appendChild(link);
+                return;
+            }
             var styles = ['marmot', 'sunny', 'bubbly', 'professor', 'sparky', 'nuts', 'daimon', 'house'];
             var names = { 'marmot': 'Dr. Marmot', 'sunny': 'Dr. Sunny Marmot', 'bubbly': 'Dr. Bubbly Marmot', 'professor': 'Dr. Professor Marmot', 'sparky': 'Dr. Sparky Marmot', 'nuts': 'Dr. Nuts Marmot', 'daimon': 'Dr. Daimon Marmot', 'house': 'Dr. House Marmot' };
             var style = styles[Math.floor(Math.random() * styles.length)];

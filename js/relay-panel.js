@@ -2,6 +2,7 @@ import { relayList, gameWrap, getRelayRow } from './dom.js';
 import { scanBeep } from './audio.js';
 import { html, escapeHtml } from './html.js';
 import { shortUrl } from './relay-validation.js';
+import { isJeff } from './jeff.js';
 
 export { shortUrl };
 
@@ -11,6 +12,18 @@ export function urlToId(url) {
 
 export function clearRelayPanel() {
     relayList.innerHTML = '';
+}
+
+/** In Jeff Mode, relay rows are collected inside a wrapper card. */
+function getRelayGroup() {
+    let group = relayList.querySelector('.relay-group');
+    if (!group) {
+        group = document.createElement('div');
+        group.className = 'relay-group';
+        group.innerHTML = html`<div class="relay-group-title">Relays</div>`;
+        relayList.appendChild(group);
+    }
+    return group;
 }
 
 export function setRelayState(url, state, statusText) {
@@ -26,7 +39,11 @@ export function setRelayState(url, state, statusText) {
             <div class="relay-name">${escapeHtml(shortUrl(url))}</div>
             <div class="relay-status">IDLE</div>
         `;
-        relayList.appendChild(row);
+        if (isJeff) {
+            getRelayGroup().appendChild(row);
+        } else {
+            relayList.appendChild(row);
+        }
     }
     row.className = `relay-row ${state}`;
     row.querySelector('.relay-status').textContent = statusText;

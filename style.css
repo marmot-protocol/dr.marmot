@@ -1404,6 +1404,31 @@ body {
 }
 
 /* ══════════════════════════════════════════
+   FOOTER — retro mode link
+══════════════════════════════════════════ */
+#retro-footer {
+    text-align: center;
+    padding: 1ch 0;
+    font-size: 0.75ch;
+    color: var(--c-dim);
+}
+
+#retro-footer a {
+    color: var(--c-dim);
+    text-decoration: none;
+    letter-spacing: 0.1ch;
+    transition: color 0.2s;
+}
+
+#retro-footer a:hover {
+    color: var(--c-border2);
+}
+
+#jeff-footer {
+    display: none;
+}
+
+/* ══════════════════════════════════════════
    MOBILE LAYOUT — portrait phones & small tablets
    Replaces the fixed-size+scale approach with
    a fluid vertical layout.
@@ -1725,4 +1750,5 @@ body {
     #scan-bar-wrap {
         height: 3px;
     }
+
 }

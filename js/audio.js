@@ -1,3 +1,5 @@
+import { isJeff } from './jeff.js';
+
 let audioCtx = null;
 
 export function getAudio() {
@@ -23,7 +25,7 @@ function beep(freq = 440, type = 'square', dur = 0.05, vol = 0.08) {
     }
 }
 
-export function typeBeep() { beep(880, 'square', 0.03, 0.04); }
-export function okBeep() { beep(660, 'square', 0.08, 0.1); setTimeout(() => beep(880, 'square', 0.1, 0.1), 80); }
-export function errBeep() { beep(220, 'sawtooth', 0.2, 0.12); }
-export function scanBeep() { beep(440, 'square', 0.04, 0.06); }
+export function typeBeep() { if (isJeff) return; beep(880, 'square', 0.03, 0.04); }
+export function okBeep() { if (isJeff) return; beep(660, 'square', 0.08, 0.1); setTimeout(() => beep(880, 'square', 0.1, 0.1), 80); }
+export function errBeep() { if (isJeff) return; beep(220, 'sawtooth', 0.2, 0.12); }
+export function scanBeep() { if (isJeff) return; beep(440, 'square', 0.04, 0.06); }

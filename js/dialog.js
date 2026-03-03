@@ -1,5 +1,6 @@
 import { dialogText, dialogBox } from './dom.js';
 import { typeBeep } from './audio.js';
+import { isJeff } from './jeff.js';
 
 let msgQueue = [];
 let isTyping = false;
@@ -47,6 +48,12 @@ function _nextMsg() {
 
     if (text.includes('<')) {
         dialogText.innerHTML = text;
+        _finishMsg(onDone);
+        return;
+    }
+
+    if (isJeff) {
+        dialogText.textContent = text;
         _finishMsg(onDone);
         return;
     }

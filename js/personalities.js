@@ -4,6 +4,7 @@
  */
 
 import { spritePanel } from './dom.js';
+import { isJeff } from './jeff.js';
 
 const STYLE_NAMES = {
     marmot: 'Dr. Marmelade Marmot',
@@ -17,6 +18,7 @@ const STYLE_NAMES = {
 };
 
 export function getDisplayName() {
+    if (isJeff) return 'Dr. Marmot';
     const style = spritePanel?.dataset?.spriteStyle || 'marmot';
     return STYLE_NAMES[style] ?? 'Dr. Marmot';
 }
@@ -365,6 +367,60 @@ const LINES = {
         unifyRelaysDone: "<span class='ok'>Done.</span> {count} relay(s) updated. k3 and k10002 now carry "
             + "{total} relay(s).",
     },
+    jeff: {
+        intro: "Enter an npub to run a diagnostic: relay discovery, sync verification, MIP-00/01 compliance, and profile vitals. Or use NIP-07 to sign in.",
+        invalidNpub: "Invalid npub. Expected format: npub1 followed by ~63 characters.",
+        decodeFail: "Failed to decode npub. Verify the value and try again.",
+        auditStart: "Running diagnostic for {npub}.",
+        auditStartNip07: "NIP-07 identity verified. Running diagnostic for {npub}.",
+        takingPulse: "Connecting to bootstrap relays to discover relay list.",
+        relayFound: "Found <span class=\"hi\">{count}</span> relay(s). Querying for latest events.",
+        relayInvalid: "<span class='err'>All {count} relay URL(s) invalid.</span> Using fallback relays.",
+        noRelays: "No relay lists found in k3/k10002/k10051. Using bootstrap relays.",
+        examiningSync: "Checking relay synchronization.",
+        vitalSigns: "Checking profile vitals: name, picture, NIP-05.",
+        nip05Verify: "Verifying NIP-05.",
+        vitalGaps: "{count} issue(s) found in profile vitals.",
+        vitalWarn: "Profile basics present. {count} optional field(s) could be added.",
+        vitalOk: "Profile vitals OK.",
+        singleRelay: "<span class=\"warn\">Single relay configured.</span> Add 2\u20133 more for redundancy.",
+        relayReachable: "<span class=\"warn\">{reachable} of {total} relay(s) reachable.</span>",
+        profileStale: "Profile last updated {days} days ago.",
+        contactsStale: "Contacts list is {days} days old.",
+        kpNoOverlap: "KeyPackage relays are not in the main relay list.",
+        inboxRelayCheck: "Checking inbox relays for giftwrap delivery.",
+        no10050: "No <span class='err'>kind 10050</span> found. Giftwrap delivery not possible.",
+        inboxRelaysFound: "Found <span class=\"hi\">{count}</span> inbox relay(s).",
+        inboxNoOverlap: "Inbox relays (k10050) do not overlap with NIP-65 relays (k10002).",
+        crossedWires: "<span class=\"err\">Sync issue:</span> {count} relay(s) have stale or missing data: {named}{extras}. Rebroadcast recommended.",
+        perfectSync: "<span class=\"ok\">Sync OK.</span> Profile and contacts identical across all {count} relay(s).",
+        marmotPanel: "Running MIP-00/MIP-01 compliance scan.",
+        marmotPanelSync: "Running MIP-00/MIP-01 compliance scan. Rebroadcasting will help KeyPackage propagation.",
+        no10051: "No <span class='err'>kind 10051</span> found. KeyPackage relay advertisement not available.",
+        kpRelaysFound: "Found <span class=\"hi\">{count}</span> KeyPackage relay(s). Fetching KeyPackages (kind 443).",
+        kpNone: "Kind 10051 lists {count} relay(s) but <span class='err'>no KeyPackages (k443)</span> found.",
+        kpAllPass: "All <span class=\"ok\">{count} KeyPackage(s)</span> pass MIP-00/01 validation.",
+        kpSomeFail: "<span class=\"err\">{count} KeyPackage(s) failed</span> validation{hint}",
+        orphanedKps: "<span class='warn'>KeyPackage(s) found on {count} relay(s) outside kind 10051 list.</span> These will not be discovered.",
+        charting: "Compiling results.",
+        success: "Diagnostic complete. <span class='ok'>No issues found.</span> {relays} relay(s), {kp} KeyPackage(s), all synchronized.",
+        minorWarn: "Diagnostic complete. {count} minor issue(s) found.",
+        failure: "Diagnostic complete. <span class='err'>{count} critical issue(s).</span> {message}",
+        rebroadcastStart: "Rebroadcasting profile and contacts to all relays.",
+        rebroadcastProgress: "<span class='hi'>{done}</span> of {total} relay(s) updated.",
+        rebroadcastDone: "<span class='ok'>Rebroadcast complete.</span> {count} relay(s) updated.",
+        rebroadcastFail: "Partial failure: <span class='ok'>{succeeded} succeeded</span>, <span class='err'>{failed} failed</span>.",
+        deleteKpStart: "Deleting {count} invalid KeyPackage(s).",
+        deleteKpSign: "NIP-07 signature required. Approve the signing request.",
+        deleteKpDone: "<span class='ok'>Deleted.</span> {count} KeyPackage deletion event(s) broadcast.",
+        deleteKpFail: "<span class='err'>Deletion failed.</span> Extension declined or relay error.",
+        noNip07ForAction: "This action requires a <span class='hi'>NIP-07 extension</span>.",
+        noAuditData: "No audit data. Run a diagnostic first.",
+        nextPatient: "Enter an npub or use NIP-07 to run another diagnostic.",
+        relayDivergence: "<span class='warn'>Relay list divergence:</span> {k3Only} relay(s) only in k3, {k10002Only} only in k10002.",
+        unifyRelaysStart: "Merging k3 and k10002 relay lists.",
+        unifyRelaysDone: "<span class='ok'>Relay lists unified.</span> {count} relay(s) updated with {total} relay(s) each.",
+    },
     house: {
         intro: "Give me an npub. I'll run a diagnostic. Everybody lies, especially metadata. *leans on cane*",
         invalidNpub: "That's not an npub. It's a lie. npub1, 63 chars. Try again.",
@@ -434,6 +490,11 @@ function getLines(style) {
 }
 
 export function speak(key, vars = {}) {
+    if (isJeff) {
+        const text = LINES.jeff[key] ?? LINES.marmot[key];
+        if (!text) return null;
+        return fmt(text, vars);
+    }
     const style = spritePanel?.dataset?.spriteStyle || 'marmot';
     const lines = getLines(style);
     let text = lines[key] ?? LINES.marmot[key];
