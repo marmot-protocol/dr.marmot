@@ -3,6 +3,7 @@
  */
 
 import { html, escapeHtml } from '../html.js';
+import { getNakCommand, renderNakCommandBlock } from '../nak-commands.js';
 
 const NPUB_SHORT_LEN = 20;
 
@@ -128,7 +129,7 @@ function resolvePrescriptionAction(rx) {
     return null;
 }
 
-function buildTreatmentSection(prescriptions, actionFlags, canOperate) {
+function buildTreatmentSection(prescriptions, actionFlags, canOperate, auditState) {
     if (prescriptions.length === 0 && !canOperate) return '';
 
     const {
@@ -166,10 +167,27 @@ function buildTreatmentSection(prescriptions, actionFlags, canOperate) {
             `;
         }
 
+        // Generate nak command for this action
+        let nakBlock = '';
+        if (action && action !== 'reduce-relays') {
+            const nakCmd = getNakCommand(action, auditState);
+            if (nakCmd) {
+                nakBlock = html`
+                    <div class="rx-nak-toggle">
+                        <button class="nak-toggle-btn" data-action="toggle-nak" title="Show nak CLI command">🔧 nak</button>
+                    </div>
+                    <div class="rx-nak-container hidden">${renderNakCommandBlock(nakCmd)}</div>
+                `;
+            }
+        }
+
         return html`
-            <div class="rx-row">
-                <span class="rx-text">${rxText}</span>
-                ${actionButton}
+            <div class="rx-row-wrap">
+                <div class="rx-row">
+                    <span class="rx-text">${rxText}</span>
+                    ${actionButton}
+                </div>
+                ${nakBlock}
             </div>
         `;
     });
@@ -271,6 +289,7 @@ export function renderChart(params, getDisplayName, speakFn) {
         prescriptions,
         { canRebroadcast, canDeleteKps, canUnifyRelays, canDeleteOrphanedKps, canDeleteKind4 },
         canOperate,
+        params.auditState,
     )}
                 ${buildChartSignature(doctorName)}
             </div>

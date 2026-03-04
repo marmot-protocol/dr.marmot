@@ -2290,6 +2290,101 @@ body {
 }
 
 /* ══════════════════════════════════════════
+   NAK COMMANDS — Copy-paste CLI commands
+══════════════════════════════════════════ */
+
+.rx-row-wrap {
+    /* Wrapper for prescription row + nak command */
+}
+
+.rx-nak-toggle,
+.guide-nak-toggle {
+    padding: 0.125ch 0 0.25ch 1.5ch;
+}
+
+.nak-toggle-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5ch;
+    padding: 0.125ch 0.5ch;
+    background: rgba(88, 88, 248, 0.1);
+    border: 0.125ch solid var(--c-dim);
+    color: var(--c-dim);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.nak-toggle-btn:hover {
+    color: var(--c-accent, #38e8e8);
+    border-color: var(--c-accent, #38e8e8);
+    background: rgba(56, 232, 232, 0.1);
+}
+
+.rx-nak-container,
+.guide-nak-container {
+    padding: 0 0 0.5ch 1.5ch;
+}
+
+.nak-cmd-block {
+    border: 0.125ch solid var(--c-dim);
+    background: rgba(0, 0, 20, 0.6);
+    margin-top: 0.25ch;
+}
+
+.nak-cmd-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25ch 0.5ch;
+    background: rgba(88, 88, 248, 0.08);
+    border-bottom: 0.0625ch solid var(--c-dim);
+}
+
+.nak-cmd-label {
+    font-size: 0.625ch;
+    color: var(--c-accent, #38e8e8);
+    letter-spacing: 0.5px;
+}
+
+.nak-copy-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5ch;
+    padding: 0.125ch 0.5ch;
+    background: rgba(56, 232, 232, 0.15);
+    border: 0.125ch solid var(--c-accent, #38e8e8);
+    color: var(--c-accent, #38e8e8);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.nak-copy-btn:hover {
+    background: var(--c-accent, #38e8e8);
+    color: var(--c-bg);
+}
+
+.nak-cmd-desc {
+    font-size: 0.5ch;
+    color: var(--c-border2);
+    padding: 0.375ch 0.5ch;
+    line-height: 1.5;
+}
+
+.nak-cmd-pre {
+    padding: 0.5ch;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-border) transparent;
+}
+
+.nak-cmd-pre code {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5ch;
+    color: var(--c-green);
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ══════════════════════════════════════════
    DOCTOR'S NOTES — Post-audit narrative
    recommendation from the doctor personality.
 ══════════════════════════════════════════ */

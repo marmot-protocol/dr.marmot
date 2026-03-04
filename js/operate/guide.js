@@ -6,6 +6,7 @@
 
 import { html, escapeHtml } from '../html.js';
 import { speak } from '../personalities.js';
+import { getNakCommand, renderNakCommandBlock } from '../nak-commands.js';
 
 /**
  * @typedef {Object} GuideStep
@@ -21,6 +22,7 @@ import { speak } from '../personalities.js';
 let steps = [];
 let currentStep = -1;
 let isGuided = false;
+let storedAuditState = null;
 
 /**
  * Whether guided mode is active.
@@ -59,9 +61,11 @@ export function getTotalSteps() {
  * Initialize the guided flow from prescriptions.
  * @param {string[]} prescriptions - From compileFindingsAndPrescriptions
  * @param {Object} _findings - The findings object with pass/warn/fail arrays (reserved for future step enrichment)
+ * @param {Object} [auditState] - Audit state for generating nak commands
  * @returns {number} Total steps
  */
-export function initGuide(prescriptions, _findings) {
+export function initGuide(prescriptions, _findings, auditState) {
+    storedAuditState = auditState || null;
     steps = prescriptions.map((rx, index) => ({
         index,
         prescription: rx,
@@ -104,6 +108,7 @@ export function exitGuide() {
     isGuided = false;
     currentStep = -1;
     steps = [];
+    storedAuditState = null;
 }
 
 /**
@@ -157,6 +162,20 @@ export function renderGuideCard(step) {
         `
         : '';
 
+    // Generate nak command block for this step
+    let nakSection = '';
+    if (step.fixAction && storedAuditState) {
+        const nakCmd = getNakCommand(step.fixAction, storedAuditState);
+        if (nakCmd) {
+            nakSection = html`
+                <div class="guide-nak-toggle">
+                    <button class="nak-toggle-btn" data-action="toggle-nak" title="Show nak CLI command">🔧 nak</button>
+                </div>
+                <div class="guide-nak-container hidden">${renderNakCommandBlock(nakCmd)}</div>
+            `;
+        }
+    }
+
     return html`
         <div class="guide-card" data-target-kind="${step.targetKind || ''}">
             <div class="guide-card-header">
@@ -181,6 +200,7 @@ export function renderGuideCard(step) {
                 </button>
                 <button class="guide-btn guide-btn-manual" data-action="guide-manual" title="Switch to free editing">MANUAL MODE</button>
             </div>
+            ${nakSection}
         </div>
     `;
 }

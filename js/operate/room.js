@@ -116,7 +116,7 @@ export async function enterOperatingRoom() {
         }
 
         // Initialize guided mode
-        initGuide(compiled.prescriptions, compiled.findings);
+        initGuide(compiled.prescriptions, compiled.findings, state);
         if (getTotalSteps() > 0) {
             await say(speak('orBriefingGuided', { steps: getTotalSteps() }));
         }
@@ -296,6 +296,7 @@ async function handleEditorClick(e) {
         'toggle-tray', 'add-relay', 'remove-relay', 'undo-remove',
         'toggle-rw', 'discard-all', 'commit-operate', 'close-or',
         'guide-next', 'guide-skip', 'guide-manual', 'guide-resume', 'guide-fix',
+        'toggle-nak', 'copy-nak',
     ];
     if (!OR_ACTIONS.includes(action)) return;
 
@@ -407,6 +408,21 @@ async function handleEditorClick(e) {
         resumeGuide();
         await say(speak('guideResume') || 'Resuming guided treatment.');
         renderRoom();
+        break;
+    }
+    case 'toggle-nak': {
+        const container = btn.closest('.guide-card, .rx-row-wrap')?.querySelector('.guide-nak-container, .rx-nak-container');
+        if (container) container.classList.toggle('hidden');
+        break;
+    }
+    case 'copy-nak': {
+        const pre = btn.closest('.nak-cmd-block')?.querySelector('.nak-cmd-pre code');
+        if (pre) {
+            navigator.clipboard.writeText(pre.textContent).then(() => {
+                btn.textContent = 'COPIED ✔';
+                setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
+            });
+        }
         break;
     }
     case 'guide-fix': {

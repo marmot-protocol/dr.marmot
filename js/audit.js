@@ -384,6 +384,7 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
         canOperate,
         rawNpub,
         doctorNotes: compiled.doctorNotes,
+        auditState: lastAuditState,
     }, getDisplayName, speak);
 
     // Collapse relay status rows and result sections behind an expandable summary
@@ -412,6 +413,26 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
     cardContainer.innerHTML = cardHTML;
     const chartEl = cardContainer.firstElementChild;
     relayList.appendChild(chartEl);
+
+    // Wire up nak toggle and copy buttons
+    chartEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        if (action === 'toggle-nak') {
+            const wrap = btn.closest('.rx-row-wrap');
+            const container = wrap?.querySelector('.rx-nak-container');
+            if (container) container.classList.toggle('hidden');
+        } else if (action === 'copy-nak') {
+            const pre = btn.closest('.nak-cmd-block')?.querySelector('.nak-cmd-pre code');
+            if (pre) {
+                navigator.clipboard.writeText(pre.textContent).then(() => {
+                    btn.textContent = 'COPIED ✔';
+                    setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
+                });
+            }
+        }
+    });
 
     // Wire up collapsible pass-group toggle in STATUS EFFECTS
     const passGroupToggle = chartEl.querySelector('[data-action="toggle-dx-group"]');
