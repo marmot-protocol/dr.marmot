@@ -1,4 +1,5 @@
 import { nip19 } from 'https://esm.sh/nostr-tools';
+import { isJeff } from './jeff.js';
 import { getAudio } from './audio.js';
 import { say, clearQueue } from './dialog.js';
 import { setSprite } from './sprite.js';
@@ -8,9 +9,15 @@ import { removeScanBar } from './scan-bar.js';
 import { npubInput, nip07Btn, nextBtn, auditBtn, spritePanel, dialogSpeaker, spriteLabel, relayList } from './dom.js';
 import { html } from './html.js';
 
+if (isJeff) document.body.dataset.mode = 'jeff';
+
 const SPRITE_STYLES = ['marmot', 'sunny', 'bubbly', 'professor', 'sparky', 'nuts', 'daimon', 'house'];
 
 function initSpriteStyle() {
+    if (isJeff) {
+        if (dialogSpeaker) dialogSpeaker.textContent = 'Dr. Marmot';
+        return;
+    }
     /* Inline script in HTML sets style before first paint; only sync if missing */
     if (!spritePanel?.dataset?.spriteStyle) {
         const style = SPRITE_STYLES[Math.floor(Math.random() * SPRITE_STYLES.length)];

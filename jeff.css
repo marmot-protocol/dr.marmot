@@ -1,0 +1,927 @@
+/* ════════════════════════════════════════════
+   JEFF MODE — Clean, Apple-like interface
+   Loaded conditionally when ?jeff is in the URL.
+   All rules scoped under body[data-mode="jeff"].
+
+   Layout strategy: break out of the SNES fixed-viewport
+   layout and make the page a normal flowing document.
+   The body scrolls vertically; the relay-list panel
+   scrolls horizontally with card boxes.
+════════════════════════════════════════════ */
+
+/* ── Unlock the page — html has overflow:hidden in SNES mode ── */
+html:has(body[data-mode="jeff"]) {
+    overflow: auto;
+    height: auto;
+}
+
+/* ── Foundation ── */
+body[data-mode="jeff"] {
+    --c-bg: #f5f5f7;
+    --c-panel-bg: #ffffff;
+    --c-dialog-bg: #ffffff;
+    --c-border: #d2d2d7;
+    --c-border2: #e5e5ea;
+    --c-white: #1d1d1f;
+    --c-yellow: #bf8600;
+    --c-green: #248a3d;
+    --c-red: #d70015;
+    --c-cyan: #0071e3;
+    --c-dim: #86868b;
+    --c-shadow: rgba(0, 0, 0, 0.04);
+    --c-relay-border: #e5e5ea;
+
+    --jeff-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
+        Roboto, Helvetica, Arial, sans-serif;
+    --jeff-font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+        'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --jeff-font-mono: 'SF Mono', ui-monospace, 'Cascadia Code', 'Fira Code',
+        Consolas, monospace;
+
+    font-family: var(--jeff-font);
+    font-size: 13px;
+    line-height: 1.47;
+    background: var(--c-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Break out of SNES fixed layout — let the page scroll normally */
+    overflow: auto;
+    height: auto;
+    min-height: 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+
+/* ══════════════════════════════════════════
+   LAYOUT — break the fixed viewport
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #screen-viewport {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    min-height: auto;
+    transform: none;
+    flex-shrink: 1;
+    overflow: visible;
+    padding: 32px 40px;
+}
+
+body[data-mode="jeff"] #scanlines {
+    display: none;
+}
+
+body[data-mode="jeff"] #game-wrap {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    border: none;
+    border-radius: 10px;
+    box-shadow: none;
+    background: transparent;
+    overflow: visible;
+}
+
+body[data-mode="jeff"] #game-wrap.flash-ok,
+body[data-mode="jeff"] #game-wrap.flash-err {
+    animation: none;
+}
+
+body[data-mode="jeff"] #main-area {
+    flex: none;
+    height: auto;
+    overflow: visible;
+    border-bottom: none;
+}
+
+body[data-mode="jeff"] #sprite-panel {
+    display: none;
+}
+
+body[data-mode="jeff"] #status-panel {
+    width: 100%;
+    background: var(--c-panel-bg);
+    overflow: visible;
+}
+
+
+/* ══════════════════════════════════════════
+   TOP BAR
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #top-bar {
+    background: var(--c-panel-bg);
+    border: 0.5px solid var(--c-border);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    height: auto;
+    padding: 14px 20px;
+    margin-bottom: 12px;
+}
+
+body[data-mode="jeff"] .title-pixel {
+    color: var(--c-white);
+    font-family: var(--jeff-font-display);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .subtitle-pixel {
+    color: var(--c-dim);
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+    opacity: 1;
+}
+
+
+/* ══════════════════════════════════════════
+   STATUS PANEL TITLE
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #status-panel-title {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: var(--c-dim);
+    padding: 0 4px 8px;
+    border-bottom: none;
+    background: none;
+}
+
+
+/* ══════════════════════════════════════════
+   RELAY LIST — horizontal scroll container
+   Children (.relay-group, .result-section,
+   .patient-chart) are card boxes.
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #relay-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 14px 20px 16px;
+    gap: 10px;
+    min-height: 0;
+    height: 50vh;
+    max-height: 480px;
+    flex: none;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-border) transparent;
+}
+
+body[data-mode="jeff"] #relay-list::-webkit-scrollbar {
+    height: 6px;
+}
+
+body[data-mode="jeff"] #relay-list::-webkit-scrollbar-thumb {
+    background: var(--c-border);
+    border-radius: 3px;
+}
+
+body[data-mode="jeff"] #relay-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body[data-mode="jeff"] .relay-idle {
+    font-family: var(--jeff-font);
+    font-size: 12px;
+    color: var(--c-dim);
+    padding: 4px 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+
+/* ── Card box — shared style for scroll panels ── */
+body[data-mode="jeff"] .relay-group,
+body[data-mode="jeff"] .result-section,
+body[data-mode="jeff"] .patient-chart {
+    flex: 0 0 300px;
+    min-width: 280px;
+    background: var(--c-panel-bg);
+    border: 0.5px solid var(--c-border);
+    border-radius: 8px;
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.03),
+        0 1px 2px rgba(0, 0, 0, 0.04);
+    padding: 10px 12px;
+    scroll-snap-align: start;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-border) transparent;
+}
+
+body[data-mode="jeff"] .patient-chart {
+    flex-basis: 380px;
+    min-width: 340px;
+}
+
+
+/* ══════════════════════════════════════════
+   RELAY GROUP CARD
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] .relay-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+body[data-mode="jeff"] .relay-group-title {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--c-dim);
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+    border-bottom: 0.5px solid var(--c-border);
+}
+
+
+/* ══════════════════════════════════════════
+   RELAY ROWS
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] .relay-row {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    padding: 4px 8px;
+    border: 0.5px solid var(--c-border);
+    border-radius: 5px;
+    background: var(--c-panel-bg);
+    gap: 8px;
+    grid-template-columns: 7px 1fr auto;
+    transition: background 0.15s;
+}
+
+body[data-mode="jeff"] .relay-dot {
+    width: 6px;
+    height: 6px;
+    border: none;
+    box-shadow: none;
+    border-radius: 50%;
+}
+
+body[data-mode="jeff"] .relay-name {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+}
+
+body[data-mode="jeff"] .relay-status {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    font-weight: 500;
+    background: none;
+    border: none;
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+/* relay states — muted, no glow */
+body[data-mode="jeff"] .relay-row.connecting .relay-dot,
+body[data-mode="jeff"] .relay-row.ok .relay-dot,
+body[data-mode="jeff"] .relay-row.warn .relay-dot,
+body[data-mode="jeff"] .relay-row.error .relay-dot {
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .relay-row.connecting .relay-dot { background: var(--c-yellow); }
+body[data-mode="jeff"] .relay-row.ok .relay-dot { background: var(--c-green); }
+body[data-mode="jeff"] .relay-row.warn .relay-dot { background: var(--c-yellow); }
+body[data-mode="jeff"] .relay-row.error .relay-dot { background: var(--c-red); }
+
+body[data-mode="jeff"] .relay-row.connecting { border-color: var(--c-border); background: rgba(191, 134, 0, 0.03); }
+body[data-mode="jeff"] .relay-row.ok { border-color: var(--c-border); background: rgba(36, 138, 61, 0.03); }
+body[data-mode="jeff"] .relay-row.warn { border-color: var(--c-border); background: rgba(191, 134, 0, 0.03); }
+body[data-mode="jeff"] .relay-row.error { border-color: var(--c-border); background: rgba(215, 0, 21, 0.03); }
+
+body[data-mode="jeff"] .relay-row.connecting .relay-dot {
+    animation: none;
+}
+
+
+/* ══════════════════════════════════════════
+   RESULT SECTION CARDS
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] .result-section {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+body[data-mode="jeff"] .result-section-title {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: var(--c-dim);
+    margin-bottom: 4px;
+    padding-bottom: 6px;
+    border-bottom: 0.5px solid var(--c-border);
+}
+
+body[data-mode="jeff"] .result-row {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    line-height: 1.45;
+    padding: 2px 0;
+}
+
+body[data-mode="jeff"] .result-icon {
+    font-size: 10px;
+    width: 14px;
+}
+
+body[data-mode="jeff"] .pop-in {
+    animation: none;
+}
+
+
+/* ══════════════════════════════════════════
+   DIALOG BOX
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #dialog-box {
+    background: var(--c-panel-bg);
+    border: 0.5px solid var(--c-border);
+    border-top: 0.5px solid var(--c-border);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    padding: 12px 20px 10px;
+    min-height: 48px;
+    max-height: none;
+    flex-shrink: 0;
+    margin-top: 12px;
+}
+
+body[data-mode="jeff"] #dialog-name-tag {
+    display: none;
+}
+
+body[data-mode="jeff"] #dialog-text {
+    font-family: var(--jeff-font);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--c-dim);
+    overflow: visible;
+}
+
+body[data-mode="jeff"] #dialog-text::-webkit-scrollbar {
+    width: auto;
+}
+
+body[data-mode="jeff"] #dialog-text::-webkit-scrollbar-thumb {
+    background: initial;
+}
+
+/* no blinking cursor */
+body[data-mode="jeff"] #dialog-text::after {
+    display: none;
+}
+
+body[data-mode="jeff"] #dialog-arrow,
+body[data-mode="jeff"] #dialog-hint {
+    display: none;
+}
+
+
+/* ══════════════════════════════════════════
+   SCAN BAR
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #scan-bar-wrap {
+    height: 2px;
+    background: var(--c-border);
+    border-radius: 0;
+}
+
+body[data-mode="jeff"] #scan-bar {
+    background: var(--c-cyan);
+    border-radius: 2px;
+}
+
+body[data-mode="jeff"] #scan-bar.scanning {
+    animation: none;
+}
+
+
+/* ══════════════════════════════════════════
+   BOTTOM AREA / INPUT
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #bottom-area {
+    flex: none;
+    height: auto;
+    overflow: visible;
+    margin-top: 12px;
+    background: var(--c-panel-bg);
+    border: 0.5px solid var(--c-border);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+body[data-mode="jeff"] #input-row {
+    background: transparent;
+    border-bottom: 0.5px solid var(--c-border);
+    padding: 10px 20px;
+    gap: 10px;
+}
+
+body[data-mode="jeff"] #input-row label {
+    font-family: var(--jeff-font);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--c-white);
+    letter-spacing: 0;
+}
+
+body[data-mode="jeff"] #npub-input {
+    font-family: var(--jeff-font-mono);
+    font-size: 12px;
+    letter-spacing: 0;
+    background: var(--c-bg);
+    color: var(--c-white);
+    border: 0.5px solid var(--c-border);
+    border-right: 0.5px solid var(--c-border);
+    border-radius: 6px 0 0 6px;
+    padding: 7px 10px;
+    box-shadow: none;
+    caret-color: var(--c-cyan);
+}
+
+body[data-mode="jeff"] #npub-input::placeholder {
+    color: var(--c-dim);
+}
+
+body[data-mode="jeff"] #npub-input:focus {
+    border-color: var(--c-cyan);
+    box-shadow: 0 0 0 2.5px rgba(0, 113, 227, 0.12);
+}
+
+body[data-mode="jeff"] #audit-btn {
+    font-family: var(--jeff-font);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+    background: var(--c-cyan);
+    color: #ffffff;
+    border: none;
+    border-radius: 0 6px 6px 0;
+    padding: 7px 16px;
+    cursor: pointer;
+}
+
+body[data-mode="jeff"] #audit-btn::before {
+    display: none;
+}
+
+body[data-mode="jeff"] #audit-btn:hover:not(:disabled) {
+    background: #0077ed;
+    color: #ffffff;
+}
+
+body[data-mode="jeff"] #audit-btn:active:not(:disabled) {
+    background: #006adb;
+    transform: none;
+}
+
+body[data-mode="jeff"] #audit-btn:disabled {
+    background: var(--c-border);
+    color: var(--c-dim);
+    border-color: transparent;
+}
+
+
+/* ══════════════════════════════════════════
+   SIGNER BOX
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #signer-box {
+    background: transparent;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 8px 20px;
+}
+
+body[data-mode="jeff"] #next-btn,
+body[data-mode="jeff"] #nip07-btn {
+    font-family: var(--jeff-font);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border: 0.5px solid var(--c-border);
+    border-radius: 5px;
+    background: var(--c-panel-bg);
+    color: var(--c-cyan);
+    cursor: pointer;
+    letter-spacing: 0;
+    transition: background 0.15s;
+}
+
+body[data-mode="jeff"] #next-btn::before {
+    display: none;
+}
+
+body[data-mode="jeff"] #next-btn:hover,
+body[data-mode="jeff"] #nip07-btn:hover {
+    background: var(--c-bg);
+    color: var(--c-cyan);
+    border-color: var(--c-cyan);
+}
+
+body[data-mode="jeff"] #nip07-btn:disabled {
+    background: var(--c-bg);
+    color: var(--c-dim);
+    border-color: var(--c-border);
+}
+
+
+/* ══════════════════════════════════════════
+   PATIENT CHART — clean card in scroll row
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] .patient-chart {
+    animation: none;
+    margin-top: 0;
+    overflow: hidden;
+}
+
+body[data-mode="jeff"] .chart-header {
+    background: var(--c-panel-bg);
+    border-bottom: 0.5px solid var(--c-border);
+    border-radius: 0;
+    padding: 8px 10px;
+    gap: 2px;
+}
+
+body[data-mode="jeff"] .chart-title {
+    font-family: var(--jeff-font-display);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--c-white);
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .chart-npub {
+    font-family: var(--jeff-font-mono);
+    font-size: 9px;
+    color: var(--c-dim);
+}
+
+body[data-mode="jeff"] .chart-doctor {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--c-white);
+    letter-spacing: 0;
+}
+
+body[data-mode="jeff"] .chart-date {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    color: var(--c-dim);
+}
+
+body[data-mode="jeff"] .chart-body {
+    padding: 10px;
+    gap: 10px;
+}
+
+body[data-mode="jeff"] .chart-section {
+    gap: 4px;
+}
+
+body[data-mode="jeff"] .chart-section-label {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: var(--c-dim);
+    border-bottom: 0.5px solid var(--c-border);
+    padding-bottom: 3px;
+    margin-bottom: 1px;
+}
+
+body[data-mode="jeff"] .chart-verdict {
+    font-family: var(--jeff-font);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+body[data-mode="jeff"] .chart-verdict.verdict-pass,
+body[data-mode="jeff"] .chart-verdict.verdict-warn,
+body[data-mode="jeff"] .chart-verdict.verdict-fail {
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .chart-hp-row {
+    gap: 6px;
+}
+
+body[data-mode="jeff"] .chart-hp-track {
+    background: var(--c-panel-bg);
+    border: 0.5px solid var(--c-border);
+    border-radius: 3px;
+    height: 8px;
+}
+
+body[data-mode="jeff"] .chart-hp-fill {
+    border-radius: 2px;
+}
+
+body[data-mode="jeff"] .chart-hp-fill.hp-full { background: var(--c-green); box-shadow: none; }
+body[data-mode="jeff"] .chart-hp-fill.hp-warn { background: var(--c-yellow); box-shadow: none; }
+body[data-mode="jeff"] .chart-hp-fill.hp-crit { background: var(--c-red); box-shadow: none; }
+
+body[data-mode="jeff"] .chart-hp-fill::after {
+    display: none;
+}
+
+body[data-mode="jeff"] .chart-hp-label {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    font-weight: 500;
+}
+
+body[data-mode="jeff"] .chart-hp-val {
+    font-family: var(--jeff-font-mono);
+    font-size: 9px;
+    font-weight: 500;
+}
+
+body[data-mode="jeff"] .chart-stats {
+    gap: 4px;
+}
+
+body[data-mode="jeff"] .stat-tag {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    border-radius: 3px;
+    padding: 1px 5px;
+    border-width: 0.5px;
+}
+
+body[data-mode="jeff"] .dx-row {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    line-height: 1.4;
+    padding: 1px 0;
+}
+
+body[data-mode="jeff"] .dx-icon {
+    font-size: 10px;
+    width: 12px;
+}
+
+body[data-mode="jeff"] .rx-row {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--c-white);
+    padding: 2px 0 2px 16px;
+}
+
+body[data-mode="jeff"] .rx-row::before {
+    color: var(--c-dim);
+    font-size: 9px;
+}
+
+body[data-mode="jeff"] .rx-text {
+    font-size: 11px;
+}
+
+body[data-mode="jeff"] .rx-action-btn {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border: 0.5px solid var(--c-green);
+    border-radius: 4px;
+    background: var(--c-panel-bg);
+    color: var(--c-green);
+    cursor: pointer;
+    letter-spacing: 0;
+}
+
+body[data-mode="jeff"] .rx-action-btn::before {
+    display: none;
+}
+
+body[data-mode="jeff"] .rx-action-btn:hover:not(:disabled) {
+    background: rgba(36, 138, 61, 0.06);
+    color: var(--c-green);
+    border-color: var(--c-green);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .rx-action-btn:active:not(:disabled) {
+    background: rgba(36, 138, 61, 0.12);
+    transform: none;
+}
+
+body[data-mode="jeff"] .rx-action-btn:disabled {
+    background: var(--c-bg);
+    color: var(--c-dim);
+    border-color: var(--c-border);
+}
+
+body[data-mode="jeff"] .rx-action-btn.rx-action-delete {
+    border-color: var(--c-red);
+    color: var(--c-red);
+    background: var(--c-panel-bg);
+}
+
+body[data-mode="jeff"] .rx-action-btn.rx-action-delete:hover:not(:disabled) {
+    background: rgba(215, 0, 21, 0.05);
+    color: var(--c-red);
+    border-color: var(--c-red);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .rx-action-btn.working {
+    animation: none;
+    color: var(--c-cyan);
+    border-color: var(--c-cyan);
+    background: rgba(0, 113, 227, 0.04);
+}
+
+body[data-mode="jeff"] .chart-signature {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    letter-spacing: 0;
+    border-top: 0.5px solid var(--c-border);
+    padding-top: 6px;
+    color: var(--c-dim);
+}
+
+
+/* ══════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] #retro-footer {
+    display: none;
+}
+
+body[data-mode="jeff"] #jeff-footer {
+    display: block;
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    color: var(--c-dim);
+    text-align: center;
+    padding: 20px 0 32px;
+}
+
+body[data-mode="jeff"] #jeff-footer a {
+    color: var(--c-cyan);
+    text-decoration: none;
+}
+
+body[data-mode="jeff"] #jeff-footer a:hover {
+    text-decoration: underline;
+}
+
+
+/* ══════════════════════════════════════════
+   MOBILE — Jeff Mode
+══════════════════════════════════════════ */
+@media (max-width: 768px) {
+    body[data-mode="jeff"] {
+        font-size: 13px;
+    }
+
+    body[data-mode="jeff"] #screen-viewport {
+        padding: 12px 8px;
+    }
+
+    body[data-mode="jeff"] #game-wrap {
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    body[data-mode="jeff"] #top-bar {
+        border-radius: 8px;
+        padding: 10px 16px;
+    }
+
+    body[data-mode="jeff"] .title-pixel {
+        font-size: 14px;
+    }
+
+    body[data-mode="jeff"] .subtitle-pixel {
+        display: none;
+    }
+
+    body[data-mode="jeff"] #sprite-panel {
+        display: none;
+    }
+
+    body[data-mode="jeff"] #status-panel-title {
+        padding: 8px 16px 4px;
+        font-size: 10px;
+    }
+
+    body[data-mode="jeff"] #relay-list {
+        padding: 10px 12px 12px;
+        gap: 8px;
+        height: 45vh;
+        max-height: 360px;
+    }
+
+    body[data-mode="jeff"] .relay-group,
+    body[data-mode="jeff"] .result-section,
+    body[data-mode="jeff"] .patient-chart {
+        flex: 0 0 240px;
+        min-width: 220px;
+    }
+
+    body[data-mode="jeff"] .patient-chart {
+        flex-basis: 280px;
+        min-width: 260px;
+    }
+
+    body[data-mode="jeff"] #dialog-box {
+        padding: 10px 16px;
+    }
+
+    body[data-mode="jeff"] #dialog-text {
+        font-size: 12px;
+    }
+
+    body[data-mode="jeff"] #input-row {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px 16px;
+        gap: 0;
+    }
+
+    body[data-mode="jeff"] .input-inner {
+        flex-direction: column;
+    }
+
+    body[data-mode="jeff"] #npub-input {
+        font-size: 16px;
+        padding: 10px 12px;
+        border-radius: 6px 6px 0 0;
+        border-right: 0.5px solid var(--c-border);
+        border-bottom: none;
+    }
+
+    body[data-mode="jeff"] #audit-btn {
+        font-size: 13px;
+        padding: 10px 16px;
+        border-radius: 0 0 6px 6px;
+        width: 100%;
+    }
+
+    body[data-mode="jeff"] #signer-box {
+        border-radius: 0;
+        padding: 8px 16px;
+    }
+
+    body[data-mode="jeff"] .chart-header {
+        flex-direction: column;
+        gap: 2px;
+        padding: 6px 8px;
+    }
+
+    body[data-mode="jeff"] .chart-header-right {
+        text-align: left;
+    }
+
+    body[data-mode="jeff"] .chart-body {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    body[data-mode="jeff"] .rx-row {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    body[data-mode="jeff"] #jeff-footer {
+        padding: 12px 16px 20px;
+    }
+}
