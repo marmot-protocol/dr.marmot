@@ -26,7 +26,7 @@ export function getRelayRow(id) { return document.getElementById(id); }
 /**
  * Returns chart action buttons from a chart container element.
  * @param {HTMLElement} chartEl - Chart container (e.g. cardContainer.firstElementChild)
- * @returns {{ rebroadcast: Element|null, deleteKps: Element|null, unifyRelays: Element|null, operatingRoom: Element|null }}
+ * @returns {{ rebroadcast: Element|null, deleteKps: Element|null, deleteOrphanedKps: Element|null, unifyRelays: Element|null, deleteKind4: Element|null, operatingRoom: Element|null }}
  */
 export function getChartActionButtons(chartEl) {
     if (!chartEl) return {
@@ -41,4 +41,16 @@ export function getChartActionButtons(chartEl) {
         deleteKind4: chartEl.querySelector('[data-action="delete-kind4"]'),
         operatingRoom: chartEl.querySelector('[data-action="enter-operating-room"]'),
     };
+}
+
+/** Returns an OR tray element by kind number within a container. */
+export function getTrayByKind(container, kind) {
+    if (!container) return null;
+    return container.querySelector(`.or-tray[data-kind="${kind}"]`);
+}
+
+/** Returns an OR add-relay button by kind within a container. */
+export function getAddBtnByKind(container, kind) {
+    if (!container) return null;
+    return container.querySelector(`.or-add-btn[data-kind="${kind}"]`);
 }

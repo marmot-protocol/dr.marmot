@@ -34,7 +34,6 @@ const PUBLISH_TIMEOUT_MS = 15_000;
  */
 function buildK10002Event(pubkey) {
     const relays = getFinalRelayList(10002);
-    if (relays.length === 0) return null;
 
     const tags = relays.map(({ url, readWrite }) => {
         if (readWrite === 'read') return ['r', url, 'read'];
@@ -58,7 +57,6 @@ function buildK10002Event(pubkey) {
  */
 function buildK10050Event(pubkey) {
     const relays = getFinalRelayList(10050);
-    if (relays.length === 0) return null;
 
     return {
         kind: 10050,
@@ -76,7 +74,6 @@ function buildK10050Event(pubkey) {
  */
 function buildK10051Event(pubkey) {
     const relays = getFinalRelayList(10051);
-    if (relays.length === 0) return null;
 
     return {
         kind: 10051,
@@ -97,7 +94,7 @@ function buildK10051Event(pubkey) {
 function buildK3Event(pubkey) {
     const state = getAuditState();
     const relays = getFinalRelayList(3);
-    if (relays.length === 0 && !state?.bestK3) return null;
+    if (!state?.bestK3 && relays.length === 0) return null; // No existing k3 and nothing to publish
 
     // Preserve all non-relay tags (p tags, etc.) from existing k3
     const preservedTags = [];

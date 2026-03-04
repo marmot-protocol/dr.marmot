@@ -79,7 +79,7 @@ function buildEffectGroup(groupLabel, groupClass, items) {
         return html`
             <div class="dx-row${effect.hint ? ' dx-has-hint' : ''}">
                 <span class="dx-icon dx-${effect.type}">${icon}</span>
-                <span class="dx-${effect.type}">${effect.text}</span>
+                <span class="dx-${effect.type}">${escapeHtml(effect.text)}</span>
                 ${hintRow}
             </div>
         `;
@@ -157,7 +157,7 @@ function buildTreatmentSection(prescriptions, actionFlags, canOperate, auditStat
             actionButton = html`
                 <button class="rx-action-btn" data-action="unify-relays"${requiresNip07Attrs}>⚙ UNIFY</button>
             `;
-        } else if (action === 'reduce-relays') {
+        } else if (action === 'reduce-relays' && canOperate) {
             actionButton = html`
                 <button class="rx-action-btn" data-action="enter-operating-room"${requiresNip07Attrs}>⚕ OPERATE</button>
             `;

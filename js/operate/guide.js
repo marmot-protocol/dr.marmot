@@ -76,7 +76,7 @@ export function initGuide(prescriptions, _findings, auditState) {
         fixAction: getFixActionForPrescription(rx),
     }));
     currentStep = steps.length > 0 ? 0 : -1;
-    isGuided = true;
+    isGuided = steps.length > 0;
     return steps.length;
 }
 
@@ -88,6 +88,7 @@ export function nextStep() {
     if (!isGuided) return null;
     currentStep++;
     if (currentStep >= steps.length) {
+        isGuided = false;
         return null;
     }
     return steps[currentStep];

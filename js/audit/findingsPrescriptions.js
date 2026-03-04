@@ -112,7 +112,7 @@ export function generateDoctorNotes(params) {
         noteKey = 'doctorNoteRelayConfig';
     } else if (hasSync && !hasRelayConfig && !hasMarmot && !hasKp) {
         noteKey = 'doctorNoteSync';
-    } else if (hasMarmot && !hasRelayConfig && !hasSync) {
+    } else if (hasMarmot && !hasRelayConfig && !hasSync && !hasKp) {
         noteKey = 'doctorNoteMarmot';
     } else if (hasKp && !hasRelayConfig && !hasSync && !hasMarmot) {
         noteKey = 'doctorNoteKeyPackage';
@@ -609,10 +609,10 @@ export function generatePrescriptions(
     const uniqueRx = [...new Set(prescriptions)].sort(
         (a, b) => prescriptionPriority(a) - prescriptionPriority(b),
     );
-    const canRebroadcast = (staleRelays > 0 || missingRelays > 0);
-    const canDeleteKps = missingITagIds.length > 0;
-    const canDeleteOrphanedKps = orphanedKpRelays && orphanedKpRelays.length > 0;
-    const canDeleteKind4 = auditCtx.hasDeprecatedK4;
+    const canRebroadcast = Boolean(staleRelays > 0 || missingRelays > 0);
+    const canDeleteKps = Boolean(missingITagIds.length > 0);
+    const canDeleteOrphanedKps = Boolean(orphanedKpRelays && orphanedKpRelays.length > 0);
+    const canDeleteKind4 = Boolean(auditCtx.hasDeprecatedK4);
     return { prescriptions: uniqueRx, canRebroadcast, canDeleteKps, canDeleteOrphanedKps, canDeleteKind4 };
 }
 

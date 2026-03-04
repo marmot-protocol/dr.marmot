@@ -24,6 +24,8 @@
     --c-cyan: #38e8e8;
     --c-dim: #484878;
     --c-shadow: #000044;
+    --c-text: #f0f0ff;
+    --c-panel: #08082a;
     --c-relay-border: #050510;
 
     --topbar-h: 5.5ch;
@@ -1147,11 +1149,6 @@ body {
     position: relative;
 }
 
-#nip07-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
 #nip07-btn:not(:disabled):hover {
     background: linear-gradient(180deg, #3a5a3a, #1a3a1a);
     color: var(--c-yellow);
@@ -1195,6 +1192,7 @@ body {
 }
 
 #nip07-btn:disabled {
+    opacity: 0.4;
     background: #111130;
     color: var(--c-dim);
     border-color: var(--c-dim);

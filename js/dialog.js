@@ -45,10 +45,19 @@ export function say(text, onDone = null) {
     });
 }
 
-function _appendToLog(content) {
+/**
+ * Append a message entry to the dialog log.
+ * @param {string} content - Text or pre-sanitized HTML
+ * @param {boolean} isHtml - If true, render as innerHTML (caller must pre-sanitize); otherwise textContent
+ */
+function _appendToLog(content, isHtml = false) {
     const entry = document.createElement('div');
     entry.className = 'dialog-msg';
-    entry.innerHTML = content;
+    if (isHtml) {
+        entry.innerHTML = content;
+    } else {
+        entry.textContent = content;
+    }
     dialogText.appendChild(entry);
     dialogText.scrollTop = dialogText.scrollHeight;
 }
@@ -69,13 +78,15 @@ function _nextMsg() {
     const { text, onDone } = msgQueue[0];
 
     if (text.includes('<')) {
-        _appendToLog(text);
+        // Pre-formatted HTML from speak() — callers are responsible for sanitizing
+        // untrusted values via escapeHtml() before they reach this path.
+        _appendToLog(text, true);
         _finishMsg(onDone);
         return;
     }
 
     if (isJeff) {
-        _appendToLog(text);
+        _appendToLog(text); // plain text — safe textContent path
         _finishMsg(onDone);
         return;
     }

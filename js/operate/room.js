@@ -5,7 +5,7 @@
  */
 
 import { getAuditState } from '../audit.js';
-import { relayList } from '../dom.js';
+import { relayList, getTrayByKind, getAddBtnByKind } from '../dom.js';
 import { say } from '../dialog.js';
 import { speak } from '../personalities.js';
 import { setSprite } from '../sprite.js';
@@ -45,6 +45,7 @@ import {
 
 let isOperating = false;
 let healthResults = null;
+let orSessionId = 0;
 /** @type {HTMLElement[]} Saved chart DOM nodes (preserved with event listeners) */
 let savedChartNodes = [];
 
@@ -78,6 +79,7 @@ export async function enterOperatingRoom() {
     }
 
     isOperating = true;
+    orSessionId++;
     healthResults = new Map();
 
     // Save current relay list DOM nodes (preserves event listeners) [S1 fix]
@@ -134,6 +136,7 @@ export async function enterOperatingRoom() {
  */
 export function exitOperatingRoom() {
     isOperating = false;
+    orSessionId++;
     healthResults = null;
     clearAllChanges();
     exitGuide();
@@ -175,7 +178,7 @@ function renderRoom() {
     if (isGuidedMode()) {
         const step = getCurrentStep();
         if (step?.targetKind) {
-            const tray = relayList.querySelector(`.or-tray[data-kind="${step.targetKind}"]`);
+            const tray = getTrayByKind(relayList, step.targetKind);
             if (tray) {
                 tray.classList.add('or-tray-highlighted');
                 tray.classList.remove('or-tray-collapsed');
@@ -189,6 +192,8 @@ function renderRoom() {
  * @param {Object} auditState - Audit state
  */
 async function runHealthChecks(auditState) {
+    const session = orSessionId;
+
     // Collect all unique relay URLs from all kinds
     const allUrls = new Set();
     for (const kind of [10002, 10050, 10051, 3]) {
@@ -205,26 +210,32 @@ async function runHealthChecks(auditState) {
 
     scanBeep();
     await say(speak('orHealthStart') || 'Running relay diagnostics...');
+    if (session !== orSessionId) return; // OR closed during say()
+
     addScanBar();
     setScanProgress(10);
 
     let checked = 0;
     const total = allUrls.size;
 
-    healthResults = await checkAllRelaysHealth(
+    const results = await checkAllRelaysHealth(
         [...allUrls],
         (_url, phase) => {
-            // onRelayProgress — update status in real-time if visible
+            if (session !== orSessionId) return;
             if (phase === 'connecting') scanBeep();
         },
         (_result) => {
-            // onRelayDone
+            if (session !== orSessionId) return;
             checked++;
             const pct = Math.round(10 + (80 * checked / total));
             setScanProgress(pct);
         },
     );
 
+    // Bail if OR was closed during health checks
+    if (session !== orSessionId) return;
+
+    healthResults = results;
     setScanProgress(100);
     removeScanBar();
 
@@ -240,6 +251,8 @@ async function runHealthChecks(auditState) {
     } else {
         await say(speak('orHealthGood', { count: healthy }) || `All ${healthy} relay(s) responding. Vitals stable.`);
     }
+
+    if (session !== orSessionId) return;
 
     // Re-render with health data
     renderRoom();
@@ -489,7 +502,7 @@ async function executeFixAction(fixAction) {
         break;
     }
     default:
-        console.error('Unknown fix action:', fixAction);
+        throw new Error('Unknown fix action: ' + fixAction);
     }
 }
 
@@ -500,7 +513,7 @@ async function executeFixAction(fixAction) {
 function handleAddInputKeydown(e) {
     if (e.key !== 'Enter') return;
     const kind = Number(e.target.dataset.kind);
-    const addBtn = relayList.querySelector(`.or-add-btn[data-kind="${kind}"]`);
+    const addBtn = getAddBtnByKind(relayList, kind);
     if (addBtn) addBtn.click();
 }
 
@@ -540,8 +553,8 @@ async function executeOperations() {
 
     // Determine publish targets: all relays we know about
     const publishRelays = [...new Set([
-        ...auditState.relaysToInvestigate,
-        ...auditState.marmotRelays,
+        ...(Array.isArray(auditState.relaysToInvestigate) ? auditState.relaysToInvestigate : []),
+        ...(Array.isArray(auditState.marmotRelays) ? auditState.marmotRelays : []),
     ])];
 
     const results = await executeAllProcedures(

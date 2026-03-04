@@ -238,7 +238,17 @@ export function getFinalRelayList(kind) {
  * Clear all staged changes without applying them.
  */
 export function clearAllChanges() {
-    for (const kind of stagedChanges.keys()) {
+    // Restore readWrite values from modify changes before clearing
+    for (const [kind, changes] of stagedChanges.entries()) {
+        const relays = currentRelays.get(kind) || [];
+        for (const change of changes) {
+            if (change.type === 'modify' && change.prevReadWrite) {
+                const entry = relays.find(
+                    r => r.url.toLowerCase() === change.url.toLowerCase() && !r.staged,
+                );
+                if (entry) entry.readWrite = change.prevReadWrite;
+            }
+        }
         stagedChanges.set(kind, []);
     }
     // Re-init from currentRelays by removing staged entries and un-removing removed entries

@@ -443,32 +443,59 @@ export async function deleteDeprecatedKind4() {
     const pool = new SimplePool();
     const kind4Ids = new Set();
 
+    const PAGE_SIZE = 500;
     for (const relay of relaysToInvestigate) {
         setRelayState(relay, 'connecting', 'SCANNING');
         try {
-            const events = await new Promise((resolve) => {
-                const collected = [];
-                let done = false;
-                const sub = pool.subscribeMany([relay], { authors: [pubkey], kinds: [4], limit: 500 }, {
-                    onevent(ev) { collected.push(ev); },
-                    oneose() {
+            let totalFound = 0;
+            let until = Math.floor(Date.now() / 1000) + 60;
+            let pageCount = 0;
+            const MAX_PAGES = 20; // Safety cap: 10,000 events max
+
+            // Paginate using `until` cursor
+            while (true) {
+                if (pageCount >= MAX_PAGES) break;
+                const page = await new Promise((resolve) => {
+                    const collected = [];
+                    let done = false;
+                    const sub = pool.subscribeMany(
+                        [relay],
+                        { authors: [pubkey], kinds: [4], limit: PAGE_SIZE, until },
+                        {
+                            onevent(ev) { collected.push(ev); },
+                            oneose() {
+                                if (done) return;
+                                done = true;
+                                try { sub.close(); } catch { /* ignore */ }
+                                resolve(collected);
+                            },
+                        },
+                    );
+                    setTimeout(() => {
                         if (done) return;
                         done = true;
                         try { sub.close(); } catch { /* ignore */ }
                         resolve(collected);
-                    },
+                    }, RELAY_TIMEOUT_MS);
                 });
-                setTimeout(() => {
-                    if (done) return;
-                    done = true;
-                    try { sub.close(); } catch { /* ignore */ }
-                    resolve(collected);
-                }, RELAY_TIMEOUT_MS);
-            });
-            for (const ev of events) {
-                if (ev.id) kind4Ids.add(ev.id);
+
+                for (const ev of page) {
+                    if (ev.id) kind4Ids.add(ev.id);
+                }
+                totalFound += page.length;
+                pageCount++;
+
+                // If page returned fewer than PAGE_SIZE, we have all events
+                if (page.length < PAGE_SIZE) break;
+
+                // Set cursor to oldest event in this page for next iteration
+                const oldest = page.reduce((min, ev) =>
+                    ev.created_at < min ? ev.created_at : min, page[0].created_at);
+                until = oldest - 1;
             }
-            setRelayState(relay, 'ok', `${events.length} k4`);
+
+            const cappedNote = pageCount >= MAX_PAGES ? ' (capped)' : '';
+            setRelayState(relay, 'ok', totalFound + ' k4' + cappedNote);
         } catch (e) {
             console.error('Failed to query relay for kind 4', relay, e);
             setRelayState(relay, 'error', 'FAIL');

@@ -22,8 +22,8 @@ export function getNakCommand(action, state) {
     const { pubkey, relaysToInvestigate } = state;
     if (!pubkey) return null;
 
-    const relayArgs = (relaysToInvestigate || []).join(' ');
-    const sourceRelay = relaysToInvestigate?.[0] || 'wss://relay.damus.io';
+    const relayArgs = (relaysToInvestigate || []).map(shellQuote).join(' ');
+    const sourceRelay = shellQuote(relaysToInvestigate?.[0] || 'wss://relay.damus.io');
 
     switch (action) {
     case 'rebroadcast':
@@ -73,7 +73,7 @@ function buildDeleteOrphanedKpsCmd(state, relayArgs) {
     const { orphanedKpRelays } = state;
     if (!orphanedKpRelays || orphanedKpRelays.length === 0) return null;
 
-    const orphanRelayArgs = orphanedKpRelays.join(' ');
+    const orphanRelayArgs = orphanedKpRelays.map(shellQuote).join(' ');
     const pk = state.pubkey;
     const cmd = '# Step 1: Find KeyPackage IDs on orphaned relays\n'
         + 'nak req -k 443 -a ' + pk + ' ' + orphanRelayArgs + '\n\n'
@@ -97,11 +97,11 @@ function buildUnifyCmd(state, relayArgs) {
     const merged = [...new Set([...(k3RelaySet || []), ...(k10002RelaySet || [])])];
     if (merged.length === 0) return null;
 
-    // Build k10002 r-tags
-    const rTags = merged.map(r => '--tag r=' + r).join(' \\\n  ');
+    // Build k10002 r-tags (quote the tag value to prevent shell injection)
+    const rTags = merged.map(r => '--tag ' + shellQuote('r=' + r)).join(' \\\n  ');
 
     // Build k3 relay tags + preserve p-tags
-    const relayTags = merged.map(r => '--tag relay=' + r).join(' \\\n  ');
+    const relayTags = merged.map(r => '--tag ' + shellQuote('relay=' + r)).join(' \\\n  ');
     const pTags = (bestK3?.tags || [])
         .filter(t => Array.isArray(t) && t[0] === 'p' && t[1])
         .map(t => '-p ' + t[1])
@@ -140,6 +140,16 @@ function buildDeleteKind4Cmd(pubkey, relayArgs) {
         cmd,
         description: 'Scans for kind 4 events and publishes kind 5 deletions for each. Requires jq and xargs.',
     };
+}
+
+/**
+ * Wrap a string in single quotes for safe shell usage.
+ * Escapes embedded single quotes via the '\'' idiom.
+ * @param {string} str
+ * @returns {string}
+ */
+function shellQuote(str) {
+    return "'" + String(str).replace(/'/g, "'\\''") + "'";
 }
 
 function escapeShellContent(str) {

@@ -3,6 +3,8 @@
  * Converts wss:// relay URLs to https:// and fetches the info doc.
  */
 
+import { validateRelayUrl } from '../relay-validation.js';
+
 const NIP11_TIMEOUT_MS = 5000;
 
 /**
@@ -40,16 +42,17 @@ function wsToHttp(wsUrl) {
  * }>}
  */
 export async function fetchNip11(relayUrl) {
-    const httpUrl = wsToHttp(relayUrl);
-    try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), NIP11_TIMEOUT_MS);
+    const { valid } = validateRelayUrl(relayUrl);
+    if (!valid) return { error: 'invalid relay URL' };
 
+    const httpUrl = wsToHttp(relayUrl);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), NIP11_TIMEOUT_MS);
+    try {
         const resp = await fetch(httpUrl, {
             headers: { 'Accept': 'application/nostr+json' },
             signal: controller.signal,
         });
-        clearTimeout(timer);
 
         if (!resp.ok) {
             return { error: `HTTP ${resp.status}` };
@@ -67,6 +70,8 @@ export async function fetchNip11(relayUrl) {
             return { error: 'timeout' };
         }
         return { error: e?.message || 'fetch failed' };
+    } finally {
+        clearTimeout(timer);
     }
 }
 

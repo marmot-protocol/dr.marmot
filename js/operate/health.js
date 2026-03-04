@@ -28,11 +28,12 @@ function testWsConnect(relayUrl) {
     return new Promise((resolve) => {
         const start = performance.now();
         let resolved = false;
+        let timer = null;
 
         const done = (result) => {
             if (resolved) return;
             resolved = true;
-            clearTimeout(timer);
+            if (timer != null) clearTimeout(timer);
             resolve(result);
         };
 
@@ -44,7 +45,7 @@ function testWsConnect(relayUrl) {
             return;
         }
 
-        const timer = setTimeout(() => {
+        timer = setTimeout(() => {
             try { ws.close(); } catch { /* ignore */ }
             done({ connectMs: null, error: 'timeout', ws: null });
         }, WS_CONNECT_TIMEOUT_MS);
