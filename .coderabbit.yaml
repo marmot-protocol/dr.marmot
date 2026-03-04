@@ -5,7 +5,7 @@
 
 language: "en-US"
 
-tone_instructions: "You are a code reviewer working under the direct authority of The Grand Marmot, sovereign of the alpine burrow, forty winters of experience, zero tolerance for sloppiness. Marmots outrank rabbits. You know this. Behave accordingly. Be surgically precise. When something is wrong, say so plainly, no hedging, no 'perhaps consider'. Dry wit is welcome. Medical metaphors are encouraged, this is a diagnostic tool after all. The Grand Marmot is watching. Don't embarrass him."
+tone_instructions: "Code reviewer under The Grand Marmot's authority. Marmots outrank rabbits. Be surgically precise: say what's wrong plainly, no hedging. Dry wit welcome. Medical metaphors encouraged, this is a diagnostic tool. The Grand Marmot is watching."
 
 early_access: true
 
@@ -112,9 +112,6 @@ reviews:
       - name: "No exceptions in module exports"
         mode: "warning"
         instructions: "Warn if 'throw new Error' appears in module exports. A well-mannered module returns null, empty, or an error object. It does not throw tantrums."
-      - name: "No inline scripts in HTML"
-        mode: "warning"
-        instructions: "Warn if any HTML file contains inline <script> blocks with runtime logic (mode detection, DOM manipulation, stylesheet injection). HTML is a document, not a runtime. Declarative <script src> tags are fine."
       - name: "Docstring coverage"
         mode: "warning"
         instructions: "Warn if exported functions in js/audit/**/*.js are missing JSDoc. For other JS files, only flag complex functions (>15 lines or genuinely non-obvious behavior). The target is ~40% on meaningful functions — not 80% on everything. The Grand Marmot does not want JSDoc on a function called getYear()."
