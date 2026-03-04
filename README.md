@@ -114,6 +114,27 @@ dr.marmot/
 - [nostr-tools](https://github.com/nbd-wtf/nostr-tools) via ESM CDN
 - [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) pixel font
 
+## Browser Requirements
+
+![Browser Requirements](https://blossom.primal.net/d433dc35b37f30d5f07cf166d97e135e856f28e672ec3e753bfbe5567f7c93cd.png)
+
+The app uses native ES modules and the Web Audio API — no polyfills, no transpilation. Any modern browser works:
+
+| Browser | Minimum Version |
+|---------|----------------|
+| Chrome  | 61+            |
+| Firefox | 60+            |
+| Safari  | 11+            |
+| Edge    | 16+            |
+
+Internet Explorer is not supported.
+
+## License
+
+![License](https://blossom.primal.net/3b46682ddbd07e5b077c441f3cc7558e7a550e88e281ad467a1f44219893cbe1.png)
+
+MIT — see [LICENSE](LICENSE).
+
 ## Related
 
 ![Related](https://blossom.primal.net/f0b3208defef4ecfd313d7fab5275bda071cb8d7a336500e62e6a13e7e1ed469.png)
