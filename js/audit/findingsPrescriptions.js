@@ -1,6 +1,139 @@
 /**
- * Findings compilation, prescriptions, verdict, and closing-message helpers.
+ * Findings compilation, prescriptions, verdict, closing-message helpers,
+ * and doctor recommendation generation.
  */
+
+/**
+ * Per-finding recommendation hints.
+ * Maps a finding text pattern (lowercase) to a one-liner explaining
+ * why it matters and what to do.
+ * @type {Array<{pattern: string, hint: string}>}
+ */
+const FINDING_HINTS = [
+    { pattern: 'invalid relay url', hint: 'Broken URLs prevent relay discovery — remove them and use valid wss:// addresses.' },
+    { pattern: 'invalid keypackage relay', hint: 'KeyPackage relay URLs must be valid wss:// — fix or remove them from k10051.' },
+    { pattern: 'profile (kind 0) not found', hint: 'No profile means clients can\'t display your name, picture, or NIP-05. Publish a kind 0.' },
+    { pattern: 'profile (kind 0) in sync', hint: 'All relays have your latest profile — no action needed.' },
+    { pattern: 'profile (kind 0) outdated', hint: 'Some relays have an old version — rebroadcast to push the latest.' },
+    { pattern: 'profile (kind 0) missing', hint: 'Some relays don\'t have your profile at all — rebroadcast to fix.' },
+    { pattern: 'contacts list (kind 3) not found', hint: 'No contacts means clients can\'t build your social graph. Publish a kind 3.' },
+    { pattern: 'contacts (kind 3) in sync', hint: 'All relays have your latest contacts — consistent.' },
+    { pattern: 'contacts (kind 3) outdated', hint: 'Some relays have stale contacts — rebroadcast to sync.' },
+    { pattern: 'contacts (kind 3) missing', hint: 'Some relays are missing your contacts — rebroadcast.' },
+    { pattern: 'no keypackage relay list (kind 10051)', hint: 'Without k10051, nobody can find your KeyPackages. Marmot messaging requires this.' },
+    { pattern: 'keypackage relay list (kind 10051) published', hint: 'KeyPackage advertisement is live — clients can discover your KPs.' },
+    { pattern: 'keypackage relay(s) advertised', hint: 'Relay addresses are present in your k10051. Others can find your KPs there.' },
+    { pattern: 'kind 10051 contains no relay tags', hint: 'Your k10051 exists but has no relays. Add at least one relay URL.' },
+    { pattern: 'no inbox relay list (kind 10050)', hint: 'Without k10050, giftwrapped messages and Marmot invites can\'t reach you.' },
+    { pattern: 'inbox relay list (kind 10050) published', hint: 'Inbox relay advertisement is live — giftwraps can find you.' },
+    { pattern: 'inbox relay(s) advertised', hint: 'Relay addresses present in k10050 for giftwrap delivery.' },
+    { pattern: 'kind 10050 contains no valid relay tags', hint: 'Your k10050 exists but has no valid relays. Add at least one.' },
+    { pattern: 'invalid inbox relay', hint: 'Inbox relay URL is malformed — fix the URL in your k10050.' },
+    { pattern: 'keypackage(s) found on', hint: 'Orphaned KPs are invisible to other users. Add those relays to k10051 or delete the KPs.' },
+    { pattern: 'whitenoise login gate', hint: 'WhiteNoise needs k10002, k10050, and k10051 to log in. Missing any blocks access.' },
+    { pattern: 'nip-65: no read relays', hint: 'Clients need at least one read relay to deliver replies to you.' },
+    { pattern: 'nip-65: no write relays', hint: 'Clients need at least one write relay to know where you publish.' },
+    { pattern: 'nip-65: excessive relay count', hint: 'Too many relays slow down clients. Trim to 5-8 reliable ones.' },
+    { pattern: 'kind 10002 (nip-65) has malformed', hint: 'Tags array is broken. Republish k10002 with proper r-tagged relay URLs.' },
+    { pattern: 'relay lists diverge', hint: 'k3 and k10002 show different relays. Unify them so all clients see the same list.' },
+    { pattern: 'no nip-17 dm inbox', hint: 'Without k10050, NIP-17 encrypted DMs cannot be delivered to you.' },
+    { pattern: 'no blossom media server', hint: 'Clients won\'t know where to upload media for you. Publish a k10063.' },
+    { pattern: 'deprecated nip-04', hint: 'NIP-04 DMs leak metadata. Migrate to NIP-17 or Marmot for privacy.' },
+    { pattern: 'deprecated kind 2', hint: 'Kind 2 is obsolete. Use NIP-65 (k10002) for relay recommendations.' },
+    { pattern: 'all keypackages pass', hint: 'MIP-00/01 fully compliant — your Marmot setup is solid.' },
+    { pattern: 'all tags valid', hint: 'KeyPackage tags pass validation — encoding, ciphersuite, and extensions are correct.' },
+];
+
+/**
+ * Get the recommendation hint for a finding text.
+ * @param {string} findingText
+ * @returns {string|null}
+ */
+export function getHintForFinding(findingText) {
+    const lower = (findingText || '').toLowerCase();
+    for (const { pattern, hint } of FINDING_HINTS) {
+        if (lower.includes(pattern)) return hint;
+    }
+    return null;
+}
+
+/**
+ * Generate a structured Doctor's Notes summary based on findings and verdict.
+ * Returns a key for speak() that the personality system uses to render the note.
+ *
+ * @param {Object} params
+ * @param {Object} params.findings - { pass: [], warn: [], fail: [] }
+ * @param {boolean} params.allOk
+ * @param {boolean} params.hasFailures
+ * @param {boolean} params.hasWarnings
+ * @param {string[]} params.categories - from categorizeFailures()
+ * @param {Object} params.auditCtx
+ * @returns {{ noteKey: string, noteVars: Object }}
+ */
+export function generateDoctorNotes(params) {
+    const { findings, allOk, hasFailures, hasWarnings, categories, auditCtx } = params;
+
+    if (allOk) {
+        return {
+            noteKey: 'doctorNoteClean',
+            noteVars: {
+                passCount: findings.pass.length,
+                relayCount: auditCtx.totalRelays || 0,
+            },
+        };
+    }
+
+    if (!hasFailures && hasWarnings) {
+        const warnCount = findings.warn.length;
+        const isRelayDivergence = categories.includes('sync') || auditCtx.relayDiverges;
+        const isBloated = auditCtx.nip65Bloated;
+        return {
+            noteKey: 'doctorNoteMinor',
+            noteVars: {
+                warnCount,
+                isRelayDivergence,
+                isBloated,
+                passCount: findings.pass.length,
+            },
+        };
+    }
+
+    // Has failures — determine the main category
+    const failCount = findings.fail.length;
+    const warnCount = findings.warn.length;
+
+    const hasRelayConfig = categories.includes('relay-config');
+    const hasSync = categories.includes('sync');
+    const hasMarmot = categories.includes('marmot-foundation');
+    const hasKp = categories.includes('keypackage');
+
+    let noteKey = 'doctorNoteCritical';
+    if (hasRelayConfig && !hasSync && !hasMarmot && !hasKp) {
+        noteKey = 'doctorNoteRelayConfig';
+    } else if (hasSync && !hasRelayConfig && !hasMarmot && !hasKp) {
+        noteKey = 'doctorNoteSync';
+    } else if (hasMarmot && !hasRelayConfig && !hasSync) {
+        noteKey = 'doctorNoteMarmot';
+    } else if (hasKp && !hasRelayConfig && !hasSync && !hasMarmot) {
+        noteKey = 'doctorNoteKeyPackage';
+    } else if (categories.length >= 2) {
+        noteKey = 'doctorNoteMultiple';
+    }
+
+    return {
+        noteKey,
+        noteVars: {
+            failCount,
+            warnCount,
+            passCount: findings.pass.length,
+            hasRelayConfig,
+            hasSync,
+            hasMarmot,
+            hasKp,
+            categoryCount: categories.length,
+        },
+    };
+}
 
 const FAILURE_CATEGORIES = {
     'relay-config': ['Invalid relay', 'invalid relay', 'kind 10051 relay', 'relay URLs'],
@@ -478,7 +611,9 @@ export function generatePrescriptions(
     );
     const canRebroadcast = (staleRelays > 0 || missingRelays > 0);
     const canDeleteKps = missingITagIds.length > 0;
-    return { prescriptions: uniqueRx, canRebroadcast, canDeleteKps };
+    const canDeleteOrphanedKps = orphanedKpRelays && orphanedKpRelays.length > 0;
+    const canDeleteKind4 = auditCtx.hasDeprecatedK4;
+    return { prescriptions: uniqueRx, canRebroadcast, canDeleteKps, canDeleteOrphanedKps, canDeleteKind4 };
 }
 
 /**
@@ -566,8 +701,35 @@ export function compileFindingsAndPrescriptions(params) {
         orphanedKpRelays,
         best10050,
     );
-    const { prescriptions: uniqueRx, canDeleteKps } = rxResult;
+    const { prescriptions: uniqueRx, canDeleteKps, canDeleteOrphanedKps, canDeleteKind4 } = rxResult;
     const canRebroadcast = Boolean(rxResult.canRebroadcast) && !!(bestK0 || bestK3);
+
+    // Generate doctor's notes and per-finding hints
+    const categories = categorizeFailures(findingsResult.findings.fail.map(f => f));
+    const doctorNotes = generateDoctorNotes({
+        findings: findingsResult.findings,
+        allOk: findingsResult.allOk,
+        hasFailures: findingsResult.hasFailures,
+        hasWarnings: findingsResult.hasWarnings,
+        categories,
+        auditCtx,
+    });
+
+    // Attach hints to findings for per-finding recommendations
+    const findingsWithHints = {
+        pass: findingsResult.findings.pass.map(text => ({
+            text,
+            hint: getHintForFinding(text),
+        })),
+        warn: findingsResult.findings.warn.map(text => ({
+            text,
+            hint: getHintForFinding(text),
+        })),
+        fail: findingsResult.findings.fail.map(text => ({
+            text,
+            hint: getHintForFinding(text),
+        })),
+    };
 
     const lastAuditState = {
         bestK0,
@@ -591,6 +753,7 @@ export function compileFindingsAndPrescriptions(params) {
 
     return {
         findings,
+        findingsWithHints,
         prescriptions: uniqueRx,
         verdictClass,
         verdictIcon,
@@ -601,10 +764,14 @@ export function compileFindingsAndPrescriptions(params) {
         lastAuditState,
         canRebroadcast,
         canDeleteKps,
+        canDeleteOrphanedKps,
+        canDeleteKind4,
         missingITagIds,
         syncedRelays,
         staleRelays,
         missingRelays,
         totalRelays,
+        doctorNotes,
+        categories,
     };
 }

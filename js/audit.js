@@ -1,6 +1,6 @@
 import { nip19, SimplePool } from 'https://esm.sh/nostr-tools';
 import { DEFAULT_RELAYS } from './config.js';
-import { npubInput, nip07Btn, nextBtn, auditBtn, relayList, getChartActionButtons } from './dom.js';
+import { npubInput, nip07Btn, nextBtn, auditBtn, cancelBtn, relayList, getChartActionButtons } from './dom.js';
 import { errBeep, okBeep } from './audio.js';
 import { say, clearQueue, setOnAllDone } from './dialog.js';
 import { setSprite, startInvestigating, stopInvestigating } from './sprite.js';
@@ -349,8 +349,26 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
     const compiled = compileFindingsAndPrescriptions(compileParams);
     lastAuditState = compiled.lastAuditState;
 
+    // Attach compiled result to audit state for OR access
+    lastAuditState.compiledResult = {
+        findings: compiled.findings,
+        findingsWithHints: compiled.findingsWithHints,
+        prescriptions: compiled.prescriptions,
+        canRebroadcast: compiled.canRebroadcast,
+        canDeleteKps: compiled.canDeleteKps,
+        canUnifyRelays,
+        allOk: compiled.allOk,
+        hasFailures: compiled.hasFailures,
+        hasWarnings: compiled.hasWarnings,
+        doctorNotes: compiled.doctorNotes,
+        categories: compiled.categories,
+    };
+
+    const canOperate = Boolean(window.nostr) && Boolean(compiled.lastAuditState?.fromNip07);
+
     const { cardHTML } = renderChart({
         findings: compiled.findings,
+        findingsWithHints: compiled.findingsWithHints,
         prescriptions: compiled.prescriptions,
         verdictClass: compiled.verdictClass,
         verdictIcon: compiled.verdictIcon,
@@ -360,16 +378,57 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
         totalRelays: compiled.totalRelays,
         canRebroadcast: compiled.canRebroadcast,
         canDeleteKps: compiled.canDeleteKps,
+        canDeleteOrphanedKps: compiled.canDeleteOrphanedKps,
+        canDeleteKind4: compiled.canDeleteKind4,
         canUnifyRelays,
+        canOperate,
         rawNpub,
-    }, getDisplayName);
+        doctorNotes: compiled.doctorNotes,
+    }, getDisplayName, speak);
+
+    // Collapse relay status rows and result sections behind an expandable summary
+    const existingRows = relayList.querySelectorAll('.relay-row, .result-section');
+    if (existingRows.length > 0) {
+        const collapser = document.createElement('div');
+        collapser.className = 'relay-rows-collapsed';
+        collapser.dataset.count = existingRows.length;
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'relay-collapse-toggle';
+        toggleBtn.textContent = `▶ VIEW RELAY DETAILS (${existingRows.length} sections)`;
+        toggleBtn.addEventListener('click', () => {
+            collapser.classList.toggle('relay-rows-expanded');
+            toggleBtn.textContent = collapser.classList.contains('relay-rows-expanded')
+                ? `▼ HIDE RELAY DETAILS`
+                : `▶ VIEW RELAY DETAILS (${existingRows.length} sections)`;
+        });
+        collapser.appendChild(toggleBtn);
+        for (const row of existingRows) {
+            collapser.appendChild(row);
+        }
+        relayList.appendChild(collapser);
+    }
 
     const cardContainer = document.createElement('div');
     cardContainer.innerHTML = cardHTML;
     const chartEl = cardContainer.firstElementChild;
     relayList.appendChild(chartEl);
 
-    const { rebroadcast: rebroadcastBtn, deleteKps: deleteKpBtn, unifyRelays: unifyRelaysBtn } = getChartActionButtons(chartEl);
+    // Wire up collapsible pass-group toggle in STATUS EFFECTS
+    const passGroupToggle = chartEl.querySelector('[data-action="toggle-dx-group"]');
+    if (passGroupToggle) {
+        passGroupToggle.addEventListener('click', () => {
+            const group = passGroupToggle.closest('.dx-group');
+            if (group) group.classList.toggle('dx-group-collapsed');
+        });
+    }
+
+    const {
+        rebroadcast: rebroadcastBtn,
+        deleteKps: deleteKpBtn,
+        unifyRelays: unifyRelaysBtn,
+        deleteOrphanedKps: deleteOrphanedKpsBtn,
+        deleteKind4: deleteKind4Btn,
+    } = getChartActionButtons(chartEl);
     if (rebroadcastBtn) {
         rebroadcastBtn.addEventListener('click', async () => {
             const { rebroadcastProfileAndContacts } = await import('./actions.js');
@@ -424,6 +483,63 @@ async function runCompileAndRenderPhase(rawNpub, compileParams, kpEventsCollecte
                 unifyRelaysBtn.disabled = false;
                 unifyRelaysBtn.classList.remove('working');
                 unifyRelaysBtn.textContent = succeeded ? 'DONE' : 'ERROR';
+            }
+        });
+    }
+
+    if (deleteOrphanedKpsBtn) {
+        deleteOrphanedKpsBtn.addEventListener('click', async () => {
+            const { deleteOrphanedKeyPackages } = await import('./actions.js');
+            deleteOrphanedKpsBtn.disabled = true;
+            deleteOrphanedKpsBtn.classList.add('working');
+            deleteOrphanedKpsBtn.textContent = 'WORKING…';
+            let succeeded = false;
+            try {
+                await deleteOrphanedKeyPackages();
+                succeeded = true;
+            } catch (err) {
+                console.error('Delete orphaned KPs action failed', err);
+            } finally {
+                deleteOrphanedKpsBtn.disabled = false;
+                deleteOrphanedKpsBtn.classList.remove('working');
+                deleteOrphanedKpsBtn.textContent = succeeded ? 'DONE' : 'ERROR';
+            }
+        });
+    }
+    if (deleteKind4Btn) {
+        deleteKind4Btn.addEventListener('click', async () => {
+            const { deleteDeprecatedKind4 } = await import('./actions.js');
+            deleteKind4Btn.disabled = true;
+            deleteKind4Btn.classList.add('working');
+            deleteKind4Btn.textContent = 'WORKING…';
+            let succeeded = false;
+            try {
+                await deleteDeprecatedKind4();
+                succeeded = true;
+            } catch (err) {
+                console.error('Delete kind 4 action failed', err);
+            } finally {
+                deleteKind4Btn.disabled = false;
+                deleteKind4Btn.classList.remove('working');
+                deleteKind4Btn.textContent = succeeded ? 'DONE' : 'ERROR';
+            }
+        });
+    }
+
+    const { operatingRoom: orBtn } = getChartActionButtons(chartEl);
+    if (orBtn) {
+        orBtn.addEventListener('click', async () => {
+            const { enterOperatingRoom } = await import('./operate/room.js');
+            orBtn.disabled = true;
+            orBtn.classList.add('working');
+            orBtn.textContent = 'PREPPING…';
+            try {
+                await enterOperatingRoom();
+            } catch (err) {
+                console.error('Operating Room entry failed', err);
+                orBtn.disabled = false;
+                orBtn.classList.remove('working');
+                orBtn.textContent = '⚕ OPERATING ROOM';
             }
         });
     }
@@ -483,6 +599,7 @@ export async function startAudit(opts = {}) {
     auditBtn.disabled = true;
     nip07Btn.disabled = true;
     nextBtn.classList.add('hidden');
+    cancelBtn.classList.remove('hidden');
     clearRelayPanel();
     addScanBar();
     setScanProgress(0);
@@ -670,9 +787,10 @@ export async function startAudit(opts = {}) {
         try { pool.close([...new Set([...DEFAULT_RELAYS, ...relaysToInvestigateForCleanup, ...marmotRelaysForCleanup])]); } catch { /* ignore */ }
     } finally {
         isAuditing = false;
+        cancelBtn.classList.add('hidden');
         setOnAllDone(() => {
             auditBtn.disabled = false;
-            nip07Btn.disabled = false;
+            nip07Btn.disabled = !window.nostr;
             nextBtn.classList.remove('hidden');
         });
     }

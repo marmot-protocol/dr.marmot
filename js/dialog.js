@@ -1,4 +1,4 @@
-import { dialogText, dialogBox } from './dom.js';
+import { dialogText, dialogBox, dialogArrow, dialogHint } from './dom.js';
 import { typeBeep } from './audio.js';
 import { isJeff } from './jeff.js';
 
@@ -8,13 +8,26 @@ let typeTimer = null;
 let autoTimer = null;
 let onAllDone = null;
 
-const AUTO_ADVANCE_MS = 400;
+/**
+ * Delay before auto-advancing to next message (ms).
+ * Set to 0 to disable auto-advance (click-to-advance only).
+ */
+let autoAdvanceMs = 0;
+
+/**
+ * Enable or disable auto-advance mode.
+ * @param {boolean} enabled
+ */
+export function setAutoAdvance(enabled) {
+    autoAdvanceMs = enabled ? 400 : 0;
+}
 
 export function clearQueue() {
     msgQueue = [];
     clearInterval(typeTimer);
     clearTimeout(autoTimer);
     isTyping = false;
+    _hideAdvanceIndicators();
 }
 
 export function setOnAllDone(fn) {
@@ -32,8 +45,17 @@ export function say(text, onDone = null) {
     });
 }
 
+function _appendToLog(content) {
+    const entry = document.createElement('div');
+    entry.className = 'dialog-msg';
+    entry.innerHTML = content;
+    dialogText.appendChild(entry);
+    dialogText.scrollTop = dialogText.scrollHeight;
+}
+
 function _nextMsg() {
     clearTimeout(autoTimer);
+    _hideAdvanceIndicators();
 
     if (msgQueue.length === 0) {
         dialogText.classList.add('done');
@@ -47,24 +69,29 @@ function _nextMsg() {
     const { text, onDone } = msgQueue[0];
 
     if (text.includes('<')) {
-        dialogText.innerHTML = text;
+        _appendToLog(text);
         _finishMsg(onDone);
         return;
     }
 
     if (isJeff) {
-        dialogText.textContent = text;
+        _appendToLog(text);
         _finishMsg(onDone);
         return;
     }
 
-    dialogText.textContent = '';
+    // Typewriter effect: create a new log entry and type into it
+    const entry = document.createElement('div');
+    entry.className = 'dialog-msg';
+    dialogText.appendChild(entry);
+
     let i = 0;
     clearInterval(typeTimer);
     typeTimer = setInterval(() => {
         if (i % 3 === 0) typeBeep();
-        dialogText.textContent += text.charAt(i);
+        entry.textContent += text.charAt(i);
         i++;
+        dialogText.scrollTop = dialogText.scrollHeight;
         if (i >= text.length) {
             clearInterval(typeTimer);
             _finishMsg(onDone);
@@ -77,24 +104,49 @@ function _finishMsg(onDone) {
     if (onDone) onDone();
 
     if (msgQueue.length > 1) {
-        autoTimer = setTimeout(() => {
-            msgQueue.shift();
-            _nextMsg();
-        }, AUTO_ADVANCE_MS);
+        if (autoAdvanceMs > 0) {
+            autoTimer = setTimeout(() => {
+                msgQueue.shift();
+                _nextMsg();
+            }, autoAdvanceMs);
+        } else {
+            // Click-to-advance: show indicators and wait
+            _showAdvanceIndicators();
+        }
     } else {
         msgQueue = [];
         dialogText.classList.add('done');
+        _hideAdvanceIndicators();
         if (onAllDone) { const f = onAllDone; onAllDone = null; f(); }
     }
 }
 
+function _showAdvanceIndicators() {
+    if (dialogArrow) dialogArrow.classList.remove('hidden');
+    if (dialogHint) dialogHint.classList.remove('hidden');
+}
+
+function _hideAdvanceIndicators() {
+    if (dialogArrow) dialogArrow.classList.add('hidden');
+    if (dialogHint) dialogHint.classList.add('hidden');
+}
+
 function _advance() {
     clearTimeout(autoTimer);
+    _hideAdvanceIndicators();
     if (isTyping) {
         clearInterval(typeTimer);
-        const text = msgQueue[0]?.text ?? '';
-        if (!text.includes('<')) dialogText.textContent = text;
-        _finishMsg(msgQueue[0]?.onDone);
+        const msg = msgQueue[0];
+        const text = msg?.text ?? '';
+        // Complete the typewriter instantly
+        const lastEntry = dialogText.querySelector('.dialog-msg:last-child');
+        if (lastEntry && !text.includes('<')) {
+            lastEntry.textContent = text;
+        } else if (lastEntry) {
+            lastEntry.innerHTML = text;
+        }
+        dialogText.scrollTop = dialogText.scrollHeight;
+        _finishMsg(msg?.onDone);
         return;
     }
     if (msgQueue.length > 1) {

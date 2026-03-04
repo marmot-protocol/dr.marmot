@@ -69,12 +69,13 @@ body {
 }
 
 #screen-viewport {
-    /* Fixed design size; scale to fit viewport */
-    width: 1366px;
+    /* Fixed design size; scale to fit viewport.
+       Smaller design → larger --scale → everything renders bigger. */
+    width: 1645px;
     height: 100ch;
     flex-shrink: 0;
     /* Cap at 1 to avoid upscale overflow on ultrawide; scale down on small screens */
-    --scale: min(1, 100vw / 1366px, 100vh / 100ch);
+    --scale: min(1, 100vw / 1645px, 100vh / 100ch);
     transform: scale(var(--scale));
     transform-origin: center center;
     position: relative;
@@ -1125,6 +1126,12 @@ body {
     background: linear-gradient(180deg, #181868, #3838a8);
 }
 
+.input-or {
+    font-size: 0.75ch;
+    color: var(--c-dim);
+    flex-shrink: 0;
+}
+
 #nip07-btn {
     font-family: 'Press Start 2P', monospace;
     font-size: 0.875ch;
@@ -1136,15 +1143,55 @@ body {
     letter-spacing: 0.05ch;
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+    position: relative;
 }
 
-#nip07-btn:hover {
+#nip07-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+#nip07-btn:not(:disabled):hover {
     background: linear-gradient(180deg, #3a5a3a, #1a3a1a);
     color: var(--c-yellow);
 }
 
-#nip07-btn:active {
+#nip07-btn:not(:disabled):active {
     background: linear-gradient(180deg, #0a2a0a, #2a4a2a);
+}
+
+#nip07-btn.nip07-ready::after {
+    content: '';
+    position: absolute;
+    inset: -0.25ch;
+    border: 0.125ch solid var(--c-green);
+    animation: nip07-pulse 1.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes nip07-pulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.6; }
+}
+
+#cancel-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.875ch;
+    padding: 0.625ch 1.25ch;
+    background: linear-gradient(180deg, #4a2a2a, #2a0a0a);
+    color: var(--c-red);
+    border: 0.375ch solid var(--c-red);
+    cursor: pointer;
+    letter-spacing: 0.05ch;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+#cancel-btn:hover {
+    background: linear-gradient(180deg, #5a3a3a, #3a1a1a);
+    color: var(--c-yellow);
 }
 
 #nip07-btn:disabled {
@@ -1278,6 +1325,19 @@ body {
 
 #dialog-text .dim {
     color: var(--c-dim);
+}
+
+/* Dialog scroll-back log entries */
+#dialog-text .dialog-msg {
+    border-bottom: 0.125ch solid rgba(88, 88, 248, 0.1);
+    padding-bottom: 0.5ch;
+    margin-bottom: 0.5ch;
+}
+
+#dialog-text .dialog-msg:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
 }
 
 /* typewriter cursor */
@@ -1426,6 +1486,1155 @@ body {
 
 #jeff-footer {
     display: none;
+}
+
+/* ══════════════════════════════════════════
+   OPERATING ROOM — SNES RPG Equipment Screen
+   Beveled menu windows, item slots, cursor
+   arrows, and that unmistakable 16-bit charm.
+══════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes or-cursor-bob {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(0.375ch); }
+}
+
+@keyframes or-heartbeat {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+}
+
+@keyframes or-slide-in {
+    0% { transform: translateY(0.75ch); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes or-staged-glow {
+    0%, 100% { box-shadow: inset 0 0 0 0.125ch rgba(56, 232, 88, 0.15); }
+    50% { box-shadow: inset 0 0 0 0.125ch rgba(56, 232, 88, 0.4), 0 0 0.75ch rgba(56, 232, 88, 0.15); }
+}
+
+/* ── Editor Container: SNES menu frame ── */
+.or-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25ch;
+    animation: or-slide-in 0.4s ease-out both;
+}
+
+/* ── Header: ornate title bar like a JRPG submenu ── */
+.or-editor-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5ch;
+    padding: 1ch 1.75ch;
+    background: linear-gradient(90deg, rgba(88, 88, 248, 0.12), rgba(0, 0, 80, 0.3));
+    border: 0.375ch solid var(--c-border2);
+    box-shadow:
+        inset 0 0 0 0.25ch var(--c-shadow),
+        inset 0 0 0 0.5ch var(--c-border),
+        0 0 2ch rgba(160, 160, 255, 0.15);
+    position: relative;
+}
+
+/* Corner ornaments */
+.or-editor-header::before,
+.or-editor-header::after {
+    content: '◆';
+    position: absolute;
+    font-size: 0.75ch;
+    color: var(--c-yellow);
+    text-shadow: 0 0 0.75ch var(--c-yellow);
+}
+
+.or-editor-header::before { top: -0.25ch; left: 0.5ch; }
+.or-editor-header::after { top: -0.25ch; right: 0.5ch; }
+
+.or-editor-title {
+    font-size: 1.25ch;
+    color: var(--c-yellow);
+    letter-spacing: 0.375ch;
+    text-shadow: 0.125ch 0.125ch 0 #000, 0 0 1.5ch rgba(248, 216, 72, 0.5);
+}
+
+.or-editor-subtitle {
+    font-size: 0.75ch;
+    color: var(--c-border2);
+    letter-spacing: 0.125ch;
+    opacity: 0.8;
+}
+
+/* ── Relay Trays: SNES inventory categories ── */
+.or-tray {
+    border: 0.25ch solid var(--c-border);
+    background: rgba(0, 0, 60, 0.5);
+    box-shadow:
+        inset 0 0 0 0.125ch var(--c-shadow),
+        inset 0 0 0 0.375ch rgba(88, 88, 248, 0.12),
+        0 0 1.5ch rgba(88, 88, 248, 0.08);
+    animation: or-slide-in 0.35s ease-out both;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.or-tray:nth-child(2) { animation-delay: 0.05s; }
+.or-tray:nth-child(3) { animation-delay: 0.1s; }
+.or-tray:nth-child(4) { animation-delay: 0.15s; }
+.or-tray:nth-child(5) { animation-delay: 0.2s; }
+
+.or-tray:hover {
+    border-color: var(--c-border2);
+    box-shadow:
+        inset 0 0 0 0.125ch var(--c-shadow),
+        inset 0 0 0 0.375ch rgba(88, 88, 248, 0.2),
+        0 0 2ch rgba(88, 88, 248, 0.15);
+}
+
+.or-tray-header {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+    padding: 0.875ch 1.5ch;
+    cursor: pointer;
+    background: linear-gradient(180deg, rgba(88, 88, 248, 0.1) 0%, rgba(0, 0, 40, 0.3) 100%);
+    border-bottom: 0.125ch solid var(--c-border);
+    user-select: none;
+    transition: background 0.15s;
+    position: relative;
+}
+
+/* Selection cursor arrow — the classic SNES ▶ */
+.or-tray-header::before {
+    content: '▶';
+    position: absolute;
+    left: 0.25ch;
+    font-size: 0.75ch;
+    color: var(--c-yellow);
+    text-shadow: 0 0 0.5ch var(--c-yellow);
+    opacity: 0;
+    transition: opacity 0.15s;
+    animation: or-cursor-bob 0.8s ease-in-out infinite;
+}
+
+.or-tray-header:hover::before {
+    opacity: 1;
+}
+
+.or-tray-header:hover {
+    background: linear-gradient(180deg, rgba(88, 88, 248, 0.18) 0%, rgba(0, 0, 60, 0.4) 100%);
+}
+
+.or-tray-icon {
+    font-size: 1.375ch;
+    line-height: 1;
+    filter: drop-shadow(0 0.125ch 0.25ch rgba(0, 0, 0, 0.5));
+}
+
+.or-tray-title {
+    font-size: 0.875ch;
+    color: var(--c-cyan);
+    letter-spacing: 0.25ch;
+    text-shadow: 0 0 0.75ch var(--c-cyan);
+    flex: 1;
+}
+
+.or-tray-tag {
+    font-size: 0.625ch;
+    color: var(--c-dim);
+    padding: 0.25ch 0.625ch;
+    border: 0.125ch solid var(--c-dim);
+    letter-spacing: 0.05ch;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.or-tray-count {
+    font-size: 0.75ch;
+    color: var(--c-border2);
+    text-shadow: 0 0 0.5ch rgba(160, 160, 255, 0.3);
+}
+
+.or-tray-arrow {
+    font-size: 1ch;
+    color: var(--c-yellow);
+    text-shadow: 0 0 0.5ch var(--c-yellow);
+    transition: transform 0.25s;
+}
+
+.or-tray-collapsed .or-tray-arrow {
+    transform: rotate(-90deg);
+}
+
+.or-tray-collapsed .or-tray-body {
+    display: none;
+}
+
+.or-tray-collapsed .or-tray-header {
+    border-bottom: none;
+}
+
+.or-tray-body {
+    padding: 0.75ch 1ch;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25ch;
+    background: linear-gradient(180deg, rgba(0, 0, 30, 0.3), rgba(0, 0, 20, 0.6));
+}
+
+/* ── Staged Badge: glowing RPG status effect ── */
+.or-staged-badge {
+    font-size: 0.625ch;
+    color: var(--c-yellow);
+    background: rgba(248, 216, 72, 0.12);
+    border: 0.125ch solid var(--c-yellow);
+    padding: 0.125ch 0.625ch;
+    letter-spacing: 0.05ch;
+    text-shadow: 0 0 0.5ch var(--c-yellow);
+    animation: or-heartbeat 1.2s ease-in-out infinite;
+}
+
+/* ── Relay Rows: SNES equipment/item slots ── */
+.or-relay-row {
+    display: grid;
+    grid-template-columns: 1.5ch 1.125ch 1fr auto auto auto auto;
+    align-items: center;
+    gap: 0.75ch;
+    padding: 0.625ch 1ch;
+    font-size: 0.875ch;
+    border: 0.125ch solid rgba(88, 88, 248, 0.15);
+    background: rgba(0, 0, 40, 0.25);
+    transition: background 0.15s, border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+
+/* Alternating row tint for that classic RPG list feel */
+.or-relay-row:nth-child(even) {
+    background: rgba(0, 0, 60, 0.2);
+}
+
+.or-relay-row:hover {
+    background: rgba(88, 88, 248, 0.08);
+    border-color: rgba(88, 88, 248, 0.3);
+}
+
+/* Change icon (+ / − ) */
+.or-change-icon {
+    font-size: 1.125ch;
+    font-weight: bold;
+    width: 1.5ch;
+    text-align: center;
+    color: transparent;
+}
+
+.or-change-add {
+    color: var(--c-green);
+    text-shadow: 0 0 0.5ch var(--c-green);
+}
+
+.or-change-remove {
+    color: var(--c-red);
+    text-shadow: 0 0 0.5ch var(--c-red);
+}
+
+/* Status dot: glowing orb like an SNES status indicator */
+.or-relay-dot {
+    width: 1.125ch;
+    height: 1.125ch;
+    border-radius: 50%;
+    background: var(--c-dim);
+    border: 0.125ch solid var(--c-relay-border);
+    box-shadow:
+        inset 0 0.125ch 0.25ch rgba(255, 255, 255, 0.2),
+        inset 0 -0.125ch 0.25ch rgba(0, 0, 0, 0.5);
+    transition: background 0.25s, box-shadow 0.25s;
+}
+
+.or-health-ok .or-relay-dot {
+    background: var(--c-green);
+    box-shadow:
+        inset 0 0.125ch 0.25ch rgba(255, 255, 255, 0.3),
+        0 0 0.75ch var(--c-green);
+}
+
+.or-health-warn .or-relay-dot {
+    background: var(--c-yellow);
+    box-shadow:
+        inset 0 0.125ch 0.25ch rgba(255, 255, 255, 0.3),
+        0 0 0.75ch var(--c-yellow);
+    animation: dot-pulse 0.8s ease-in-out infinite;
+}
+
+.or-health-dead .or-relay-dot {
+    background: var(--c-red);
+    box-shadow:
+        inset 0 0.125ch 0.25ch rgba(255, 255, 255, 0.15),
+        0 0 0.75ch var(--c-red);
+}
+
+/* URL */
+.or-relay-url {
+    color: var(--c-border2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.or-staged .or-relay-url {
+    color: var(--c-green);
+    text-shadow: 0 0 0.5ch rgba(56, 232, 88, 0.3);
+}
+
+.or-removed .or-relay-url {
+    color: var(--c-red);
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+.or-staged {
+    border-color: var(--c-green);
+    border-style: dashed;
+    background: rgba(56, 232, 88, 0.04);
+    animation: or-staged-glow 2s ease-in-out infinite;
+}
+
+.or-removed {
+    border-color: var(--c-red);
+    border-style: dashed;
+    background: rgba(248, 56, 56, 0.04);
+}
+
+/* Read/Write toggles: SNES toggle buttons */
+.or-rw-toggles {
+    display: flex;
+    gap: 0.25ch;
+}
+
+.or-rw-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.625ch;
+    padding: 0.375ch 0.5ch;
+    background: linear-gradient(180deg, #181840, #0a0a20);
+    color: var(--c-dim);
+    border: 0.125ch solid var(--c-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+    position: relative;
+}
+
+/* Beveled shine on active toggles */
+.or-rw-btn.or-rw-active {
+    color: var(--c-cyan);
+    border-color: var(--c-cyan);
+    background: linear-gradient(180deg, #1a3a5a, #0a1a30);
+    text-shadow: 0 0 0.5ch var(--c-cyan);
+    box-shadow: 0 0 0.5ch rgba(56, 232, 232, 0.25);
+}
+
+.or-rw-btn.or-rw-active::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.or-rw-btn:hover {
+    border-color: var(--c-yellow);
+    color: var(--c-yellow);
+    text-shadow: 0 0 0.375ch var(--c-yellow);
+}
+
+/* Latency display */
+.or-relay-latency {
+    font-size: 0.625ch;
+    color: var(--c-dim);
+    white-space: nowrap;
+    min-width: 12ch;
+    text-align: right;
+}
+
+.or-health-ok .or-relay-latency { color: var(--c-green); }
+.or-health-warn .or-relay-latency { color: var(--c-yellow); }
+.or-health-dead .or-relay-latency { color: var(--c-red); }
+
+/* Mini HP bar per relay: SNES-style stat bar */
+.or-relay-hp {
+    display: flex;
+    align-items: center;
+    min-width: 6ch;
+}
+
+.or-hp-track {
+    width: 100%;
+    height: 1ch;
+    background: #0a0a2a;
+    border: 0.125ch solid var(--c-border);
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0.125ch 0.25ch rgba(0, 0, 0, 0.6);
+}
+
+.or-hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a838, var(--c-green));
+    box-shadow: 0 0 0.5ch var(--c-green);
+    transition: width 0.4s ease;
+    position: relative;
+}
+
+/* Shine stripe on HP bar */
+.or-hp-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 50%);
+}
+
+.or-health-warn .or-hp-fill {
+    background: linear-gradient(90deg, #c8a020, var(--c-yellow));
+    box-shadow: 0 0 0.5ch var(--c-yellow);
+}
+
+.or-health-dead .or-hp-fill {
+    background: linear-gradient(90deg, #a82020, var(--c-red));
+    box-shadow: 0 0 0.5ch var(--c-red);
+}
+
+/* Action buttons: SNES menu buttons with bevel */
+.or-relay-action {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.75ch;
+    padding: 0.375ch 0.625ch;
+    background: linear-gradient(180deg, #282848, #101028);
+    border: 0.125ch solid var(--c-dim);
+    color: var(--c-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+    position: relative;
+}
+
+.or-relay-action::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 55%);
+    pointer-events: none;
+}
+
+.or-remove-btn:hover {
+    color: var(--c-red);
+    border-color: var(--c-red);
+    background: linear-gradient(180deg, #4a2020, #2a0a0a);
+    box-shadow: 0 0 0.5ch rgba(248, 56, 56, 0.3);
+}
+
+.or-undo-btn {
+    color: var(--c-yellow);
+    border-color: var(--c-yellow);
+    background: linear-gradient(180deg, #3a3a20, #1a1a0a);
+}
+
+.or-undo-btn:hover {
+    background: linear-gradient(180deg, #4a4a28, #2a2a10);
+    box-shadow: 0 0 0.5ch rgba(248, 216, 72, 0.3);
+}
+
+/* ── Add Relay: command input like a JRPG text entry ── */
+.or-add-row {
+    display: flex;
+    gap: 0.5ch;
+    margin-top: 0.625ch;
+    padding-top: 0.625ch;
+    border-top: 0.125ch solid rgba(88, 88, 248, 0.15);
+}
+
+.or-add-input {
+    flex: 1;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.75ch;
+    padding: 0.625ch 1ch;
+    background: #000008;
+    color: var(--c-green);
+    border: 0.25ch solid var(--c-border);
+    box-shadow:
+        inset 0 0.25ch 0.5ch rgba(0, 0, 0, 0.6),
+        inset 0 0 0 0.125ch rgba(88, 88, 248, 0.08);
+    caret-color: var(--c-green);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.or-add-input::placeholder {
+    color: var(--c-dim);
+}
+
+.or-add-input:focus {
+    border-color: var(--c-border2);
+    box-shadow:
+        inset 0 0.25ch 0.5ch rgba(0, 0, 0, 0.6),
+        0 0 1ch rgba(160, 160, 255, 0.25);
+}
+
+.or-add-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.75ch;
+    padding: 0.625ch 1.25ch;
+    background: linear-gradient(180deg, #2a5a2a, #0a2a0a);
+    color: var(--c-green);
+    border: 0.25ch solid var(--c-green);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+}
+
+.or-add-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.or-add-btn:hover {
+    background: linear-gradient(180deg, #3a7a3a, #1a4a1a);
+    color: var(--c-yellow);
+    border-color: var(--c-yellow);
+    box-shadow: 0 0 1.5ch rgba(56, 232, 88, 0.4);
+}
+
+.or-add-btn:active {
+    background: linear-gradient(180deg, #0a2a0a, #2a5a2a);
+    transform: translateY(0.125ch);
+}
+
+.or-add-error {
+    font-size: 0.625ch;
+    color: var(--c-red);
+    padding: 0.25ch 1ch;
+    text-shadow: 0 0 0.5ch rgba(248, 56, 56, 0.4);
+}
+
+.or-empty {
+    font-size: 0.75ch;
+    color: var(--c-dim);
+    padding: 1.5ch;
+    text-align: center;
+    border: 0.125ch dashed rgba(88, 88, 248, 0.15);
+    background: rgba(0, 0, 30, 0.3);
+}
+
+/* ── Bottom Actions: SNES command menu ── */
+.or-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75ch;
+    padding: 1.25ch 1ch;
+    border: 0.25ch solid var(--c-border);
+    background: rgba(0, 0, 60, 0.5);
+    box-shadow:
+        inset 0 0 0 0.125ch var(--c-shadow),
+        inset 0 0 0 0.375ch rgba(88, 88, 248, 0.12);
+    animation: or-slide-in 0.4s ease-out 0.25s both;
+}
+
+.or-staged-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625ch 1ch;
+    background: rgba(248, 216, 72, 0.06);
+    border: 0.25ch solid var(--c-yellow);
+    box-shadow:
+        inset 0 0 0 0.125ch rgba(248, 216, 72, 0.1),
+        0 0 1ch rgba(248, 216, 72, 0.1);
+}
+
+.or-staged-count {
+    font-size: 0.75ch;
+    color: var(--c-yellow);
+    letter-spacing: 0.05ch;
+    text-shadow: 0 0 0.5ch var(--c-yellow);
+}
+
+.or-discard-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.625ch;
+    padding: 0.5ch 1ch;
+    background: linear-gradient(180deg, #4a1a1a, #2a0808);
+    color: var(--c-red);
+    border: 0.25ch solid var(--c-red);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+}
+
+.or-discard-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.or-discard-btn:hover {
+    background: linear-gradient(180deg, #6a2a2a, #3a1010);
+    box-shadow: 0 0 1ch rgba(248, 56, 56, 0.3);
+}
+
+/* The big OPERATE button: hero button, SNES "CONFIRM" style */
+.or-operate-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1.125ch;
+    padding: 1ch 2ch;
+    background: linear-gradient(180deg, #2a6a2a, #0a3a0a);
+    color: var(--c-green);
+    border: 0.375ch solid var(--c-green);
+    cursor: pointer;
+    letter-spacing: 0.25ch;
+    white-space: nowrap;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    box-shadow:
+        inset 0 0 0 0.125ch rgba(56, 232, 88, 0.2),
+        0 0 1.5ch rgba(56, 232, 88, 0.25),
+        0 0.375ch 0 #041a04;
+}
+
+.or-operate-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.or-operate-btn:hover {
+    background: linear-gradient(180deg, #3a8a3a, #1a5a1a);
+    color: var(--c-yellow);
+    border-color: var(--c-yellow);
+    box-shadow:
+        inset 0 0 0 0.125ch rgba(248, 216, 72, 0.2),
+        0 0 2.5ch rgba(56, 232, 88, 0.4),
+        0 0.375ch 0 #041a04;
+    transform: translateY(-0.125ch);
+}
+
+.or-operate-btn:active {
+    background: linear-gradient(180deg, #0a3a0a, #2a6a2a);
+    box-shadow: inset 0 0.25ch 0.5ch rgba(0, 0, 0, 0.5);
+    transform: translateY(0.25ch);
+}
+
+.or-operate-icon {
+    font-size: 1.375ch;
+    filter: drop-shadow(0 0 0.375ch var(--c-green));
+}
+
+.or-no-changes {
+    font-size: 0.75ch;
+    color: var(--c-dim);
+    text-align: center;
+    padding: 0.75ch;
+    border: 0.125ch dashed rgba(88, 88, 248, 0.15);
+}
+
+/* Back button: SNES "B" / cancel */
+.or-close-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.75ch;
+    padding: 0.625ch 1.25ch;
+    background: linear-gradient(180deg, #3838a8, #181868);
+    color: var(--c-border2);
+    border: 0.25ch solid var(--c-border);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 0.25ch 0 #080838;
+}
+
+.or-close-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 55%);
+    pointer-events: none;
+}
+
+.or-close-btn:hover {
+    background: linear-gradient(180deg, #5050d0, #282870);
+    color: var(--c-white);
+    border-color: var(--c-border2);
+    box-shadow: 0 0.25ch 0 #080838, 0 0 1ch rgba(160, 160, 255, 0.2);
+}
+
+.or-close-btn:active {
+    background: linear-gradient(180deg, #181868, #3838a8);
+    transform: translateY(0.125ch);
+    box-shadow: none;
+}
+
+/* ── Diff Preview: SNES save-game changelog ── */
+.or-diff-preview {
+    border: 0.25ch solid var(--c-border);
+    background: rgba(0, 0, 40, 0.6);
+    padding: 1ch;
+    box-shadow:
+        inset 0 0 0 0.125ch var(--c-shadow),
+        inset 0 0 0 0.375ch rgba(88, 88, 248, 0.1);
+}
+
+.or-diff-section {
+    margin-bottom: 0.75ch;
+}
+
+.or-diff-title {
+    font-size: 0.75ch;
+    color: var(--c-cyan);
+    letter-spacing: 0.125ch;
+    margin-bottom: 0.5ch;
+    text-shadow: 0 0 0.5ch var(--c-cyan);
+    padding-bottom: 0.25ch;
+    border-bottom: 0.0625ch solid rgba(56, 232, 232, 0.2);
+}
+
+.or-diff-row {
+    font-size: 0.75ch;
+    padding: 0.25ch 0.75ch;
+    font-family: 'Press Start 2P', monospace;
+    line-height: 1.8;
+}
+
+.or-diff-add {
+    color: var(--c-green);
+    text-shadow: 0 0 0.375ch rgba(56, 232, 88, 0.3);
+}
+
+.or-diff-remove {
+    color: var(--c-red);
+    text-shadow: 0 0 0.375ch rgba(248, 56, 56, 0.3);
+}
+
+.or-diff-modify {
+    color: var(--c-yellow);
+    text-shadow: 0 0 0.375ch rgba(248, 216, 72, 0.3);
+}
+
+/* ── Operating Room Button on Patient Chart ── */
+.chart-operate-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75ch;
+    margin-top: 1ch;
+    padding: 1.25ch;
+    border: 0.25ch solid var(--c-cyan);
+    background: linear-gradient(180deg, rgba(56, 232, 232, 0.06), rgba(0, 0, 40, 0.3));
+    text-align: center;
+}
+
+/* Legacy class kept for backward compat */
+.chart-operate-row {
+    display: flex;
+    align-items: center;
+    gap: 1.25ch;
+    margin-top: 1ch;
+    padding-top: 1ch;
+    border-top: 0.125ch solid var(--c-border);
+}
+
+.rx-action-operate {
+    background: linear-gradient(180deg, #1a3a5a, #0a1a3a) !important;
+    color: var(--c-cyan) !important;
+    border: 0.25ch solid var(--c-cyan) !important;
+    font-size: 0.875ch !important;
+    padding: 0.75ch 1.5ch !important;
+    letter-spacing: 0.125ch;
+    box-shadow:
+        0 0 1ch rgba(56, 232, 232, 0.2),
+        0 0.25ch 0 #040820 !important;
+}
+
+.rx-action-operate::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%) !important;
+    pointer-events: none !important;
+}
+
+.rx-action-operate:hover:not(:disabled) {
+    background: linear-gradient(180deg, #2a4a6a, #1a2a4a) !important;
+    color: var(--c-yellow) !important;
+    border-color: var(--c-yellow) !important;
+    box-shadow:
+        0 0 2ch rgba(56, 232, 232, 0.4),
+        0 0.25ch 0 #040820 !important;
+    transform: translateY(-0.125ch) !important;
+}
+
+.rx-action-operate:active:not(:disabled) {
+    transform: translateY(0.125ch) !important;
+    box-shadow: inset 0 0.25ch 0.5ch rgba(0, 0, 0, 0.5) !important;
+}
+
+.chart-operate-hint {
+    font-size: 0.875ch;
+    color: var(--c-border2);
+    line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════
+   DOCTOR'S NOTES — Post-audit narrative
+   recommendation from the doctor personality.
+══════════════════════════════════════════ */
+
+.chart-doctor-notes {
+    padding: 0.375ch 0.5ch;
+    margin-top: 0.25ch;
+}
+
+.doctor-note-text {
+    font-size: 0.625ch;
+    line-height: 1.5;
+    color: var(--c-text);
+    border-left: 2px solid var(--c-dim);
+    padding-left: 0.5ch;
+    font-style: italic;
+}
+
+/* ── Per-finding recommendation hints ── */
+.dx-row.dx-has-hint {
+    flex-wrap: wrap;
+}
+
+.dx-hint {
+    width: 100%;
+    font-size: 0.75ch;
+    color: var(--c-border2);
+    padding-left: 2.5ch;
+    margin-top: 0.25ch;
+    font-style: normal;
+    line-height: 1.6;
+    border-left: 0.125ch solid var(--c-dim);
+}
+
+/* ── Status effects grouping ── */
+.dx-group {
+    margin-bottom: 0.5ch;
+}
+
+.dx-group-label {
+    font-size: 0.75ch;
+    letter-spacing: 0.25ch;
+    padding: 0.5ch 0 0.25ch;
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+}
+
+.dx-group-label.dx-fail { color: var(--c-red); }
+.dx-group-label.dx-warn { color: var(--c-yellow); }
+.dx-group-label.dx-pass { color: var(--c-green); cursor: pointer; }
+.dx-group-label.dx-pass:hover { color: var(--c-white); }
+
+.dx-group-count {
+    font-size: 0.625ch;
+    opacity: 0.6;
+}
+
+.dx-group-toggle {
+    font-size: 0.625ch;
+    transition: transform 0.15s;
+}
+
+.dx-group-collapsed .dx-group-body {
+    display: none;
+}
+
+.dx-group-collapsed .dx-group-toggle {
+    transform: rotate(0deg);
+}
+
+.dx-group:not(.dx-group-collapsed) .dx-group-toggle {
+    transform: rotate(90deg);
+}
+
+/* ══════════════════════════════════════════
+   GUIDED MODE — Treatment step card,
+   progress indicators, and mode toggles
+   for the step-by-step prescription walker.
+══════════════════════════════════════════ */
+
+.guide-card {
+    border: 0.25ch solid var(--c-border);
+    background: var(--c-panel);
+    margin-bottom: 0.75ch;
+    box-shadow:
+        inset 0 0 0 0.125ch var(--c-shadow),
+        inset 0 0 0 0.25ch var(--c-border),
+        0 0 1ch rgba(56, 232, 232, 0.1);
+}
+
+.guide-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+    padding: 0.5ch 0.75ch;
+    background: linear-gradient(180deg,
+        rgba(56, 232, 232, 0.15),
+        rgba(56, 232, 232, 0.05));
+    border-bottom: 0.125ch solid var(--c-border);
+    font-size: 0.875ch;
+}
+
+.guide-card-icon {
+    font-size: 1.125ch;
+}
+
+.guide-card-title {
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: var(--c-text);
+    text-transform: uppercase;
+}
+
+.guide-card-progress {
+    margin-left: auto;
+    color: var(--c-accent, #38e8e8);
+    font-weight: bold;
+}
+
+.guide-card-kind {
+    background: rgba(56, 232, 232, 0.2);
+    padding: 0.125ch 0.375ch;
+    border-radius: 2px;
+    font-size: 0.75ch;
+    color: var(--c-accent, #38e8e8);
+}
+
+.guide-card-body {
+    padding: 0.75ch;
+}
+
+.guide-prescription {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5ch;
+    font-size: 1ch;
+    line-height: 1.5;
+}
+
+.guide-rx-text {
+    flex: 1;
+    color: var(--c-text);
+}
+
+.guide-tag {
+    display: inline-block;
+    font-size: 0.625ch;
+    padding: 0.125ch 0.375ch;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 0.125ch;
+}
+
+.guide-tag-actionable {
+    background: rgba(100, 255, 100, 0.2);
+    color: #64ff64;
+    border: 1px solid rgba(100, 255, 100, 0.3);
+}
+
+.guide-tag-manual {
+    background: rgba(255, 200, 50, 0.2);
+    color: #ffc832;
+    border: 1px solid rgba(255, 200, 50, 0.3);
+}
+
+.guide-tag-client {
+    background: rgba(255, 100, 100, 0.2);
+    color: #ff6464;
+    border: 1px solid rgba(255, 100, 100, 0.3);
+}
+
+.guide-recommendation {
+    margin-top: 0.5ch;
+    font-size: 0.875ch;
+    color: var(--c-border2);
+    border-left: 0.25ch solid var(--c-dim);
+    padding-left: 0.5ch;
+    line-height: 1.6;
+    font-style: normal;
+}
+
+.guide-doctor-note {
+    margin-top: 0.375ch;
+    font-size: 0.75ch;
+    color: var(--c-accent, #38e8e8);
+    opacity: 0.7;
+}
+
+.guide-card-actions {
+    display: flex;
+    gap: 0.5ch;
+    padding: 0.5ch 0.75ch;
+    border-top: 0.125ch solid var(--c-border);
+}
+
+.guide-btn {
+    font-family: inherit;
+    font-size: 0.75ch;
+    padding: 0.375ch 0.75ch;
+    border: 0.125ch solid var(--c-border);
+    background: var(--c-shadow);
+    color: var(--c-text);
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s ease;
+}
+
+.guide-btn:hover {
+    background: var(--c-border);
+    color: var(--c-bg);
+}
+
+.guide-btn-next {
+    margin-left: auto;
+    background: rgba(56, 232, 232, 0.15);
+    border-color: var(--c-accent, #38e8e8);
+    color: var(--c-accent, #38e8e8);
+}
+
+.guide-btn-next:hover {
+    background: var(--c-accent, #38e8e8);
+    color: var(--c-bg);
+}
+
+.guide-btn-fix {
+    background: rgba(56, 232, 88, 0.2);
+    border-color: var(--c-green);
+    color: var(--c-green);
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.guide-btn-fix:hover:not(:disabled) {
+    background: var(--c-green);
+    color: var(--c-bg);
+}
+
+.guide-btn-fix:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.guide-btn-skip {
+    opacity: 0.7;
+}
+
+.guide-btn-skip:hover {
+    opacity: 1;
+}
+
+.guide-btn-manual {
+    font-size: 0.625ch;
+    opacity: 0.6;
+}
+
+.guide-btn-manual:hover {
+    opacity: 1;
+}
+
+/* ── Guide resume bar ── */
+.guide-resume-bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 0.5ch;
+    background: rgba(0, 0, 40, 0.95);
+    border-bottom: 0.25ch solid var(--c-accent, #38e8e8);
+    backdrop-filter: blur(4px);
+}
+
+.guide-btn-resume {
+    font-family: inherit;
+    font-size: 0.75ch;
+    padding: 0.5ch 1ch;
+    border: 0.25ch solid var(--c-accent, #38e8e8);
+    background: rgba(56, 232, 232, 0.08);
+    color: var(--c-accent, #38e8e8);
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    letter-spacing: 0.5px;
+    transition: all 0.15s ease;
+    animation: guide-pulse 2s ease-in-out infinite;
+}
+
+.guide-btn-resume:hover {
+    background: rgba(56, 232, 232, 0.2);
+    color: var(--c-white);
+}
+
+@keyframes guide-pulse {
+    0%, 100% { box-shadow: 0 0 0.5ch rgba(56, 232, 232, 0.2); }
+    50% { box-shadow: 0 0 1.5ch rgba(56, 232, 232, 0.4); }
+}
+
+/* ── Tray highlight for guided mode ── */
+.or-tray-highlighted {
+    box-shadow:
+        0 0 8px rgba(56, 232, 232, 0.3),
+        inset 0 0 4px rgba(56, 232, 232, 0.1);
+    border-color: var(--c-accent, #38e8e8) !important;
+}
+
+.or-tray-highlighted > .or-tray-header {
+    background: linear-gradient(180deg,
+        rgba(56, 232, 232, 0.15),
+        rgba(56, 232, 232, 0.05));
+}
+
+/* ── Relay rows collapse (after chart renders) ── */
+.relay-rows-collapsed .relay-row,
+.relay-rows-collapsed .result-section {
+    display: none;
+}
+
+.relay-rows-collapsed.relay-rows-expanded .relay-row,
+.relay-rows-collapsed.relay-rows-expanded .result-section {
+    display: flex;
+}
+
+.relay-rows-collapsed.relay-rows-expanded .result-section {
+    display: block;
+}
+
+.relay-collapse-toggle {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.75ch;
+    color: var(--c-dim);
+    background: none;
+    border: 0.125ch solid var(--c-dim);
+    padding: 0.5ch 1ch;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.5ch;
+    transition: all 0.15s ease;
+}
+
+.relay-collapse-toggle:hover {
+    color: var(--c-accent, #38e8e8);
+    border-color: var(--c-accent, #38e8e8);
 }
 
 /* ══════════════════════════════════════════
@@ -1751,4 +2960,260 @@ body {
         height: 3px;
     }
 
+    /* ── Operating Room mobile ── */
+    .or-editor-header {
+        padding: 8px 10px;
+        border-width: 2px;
+        box-shadow:
+            inset 0 0 0 1px var(--c-shadow),
+            inset 0 0 0 2px var(--c-border);
+    }
+
+    .or-editor-header::before,
+    .or-editor-header::after {
+        font-size: 6px;
+    }
+
+    .or-editor-title {
+        font-size: 10px;
+        letter-spacing: 2px;
+    }
+
+    .or-editor-subtitle {
+        font-size: 7px;
+    }
+
+    .or-tray {
+        border-width: 2px;
+    }
+
+    .or-tray-header {
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    .or-tray-header::before {
+        left: 2px;
+        font-size: 6px;
+    }
+
+    .or-tray-icon {
+        font-size: 11px;
+    }
+
+    .or-tray-title {
+        font-size: 8px;
+        letter-spacing: 1px;
+    }
+
+    .or-tray-tag {
+        font-size: 6px;
+        padding: 1px 4px;
+    }
+
+    .or-tray-count {
+        font-size: 7px;
+    }
+
+    .or-tray-arrow {
+        font-size: 9px;
+    }
+
+    .or-tray-body {
+        padding: 6px 8px;
+    }
+
+    .or-relay-row {
+        grid-template-columns: 12px 8px 1fr auto auto;
+        gap: 4px;
+        padding: 5px 8px;
+        font-size: 8px;
+        border-width: 1px;
+        flex-wrap: wrap;
+    }
+
+    .or-relay-latency {
+        display: block;
+        font-size: 7px;
+        width: 100%;
+        padding-left: 20px;
+        margin-top: 2px;
+    }
+
+    .or-relay-hp {
+        display: flex;
+        width: 100%;
+        padding-left: 20px;
+        margin-top: 2px;
+        min-width: 60px;
+    }
+
+    .or-relay-dot {
+        width: 8px;
+        height: 8px;
+    }
+
+    .or-rw-toggles {
+        gap: 2px;
+    }
+
+    .or-rw-btn {
+        font-size: 6px;
+        padding: 2px 4px;
+        border-width: 1px;
+    }
+
+    .or-relay-action {
+        font-size: 7px;
+        padding: 3px 5px;
+        border-width: 1px;
+    }
+
+    .or-add-row {
+        gap: 4px;
+    }
+
+    .or-add-input {
+        font-size: 8px;
+        padding: 7px 8px;
+        border-width: 2px;
+    }
+
+    .or-add-btn {
+        font-size: 7px;
+        padding: 7px 10px;
+        border-width: 2px;
+    }
+
+    .or-add-error {
+        font-size: 6px;
+    }
+
+    .or-actions {
+        padding: 10px 8px;
+        gap: 6px;
+        border-width: 2px;
+    }
+
+    .or-staged-summary {
+        padding: 6px 8px;
+        border-width: 2px;
+    }
+
+    .or-staged-count {
+        font-size: 7px;
+    }
+
+    .or-staged-badge {
+        font-size: 6px;
+    }
+
+    .or-discard-btn {
+        font-size: 6px;
+        padding: 4px 8px;
+        border-width: 2px;
+    }
+
+    .or-operate-btn {
+        font-size: 10px;
+        padding: 10px 16px;
+        border-width: 2px;
+        letter-spacing: 1px;
+        box-shadow:
+            inset 0 0 0 1px rgba(56, 232, 88, 0.2),
+            0 0 8px rgba(56, 232, 88, 0.25),
+            0 2px 0 #041a04;
+    }
+
+    .or-close-btn {
+        font-size: 7px;
+        padding: 6px 10px;
+        border-width: 2px;
+        box-shadow: 0 2px 0 #080838;
+    }
+
+    .or-diff-preview {
+        border-width: 2px;
+        padding: 8px;
+    }
+
+    .or-diff-title {
+        font-size: 7px;
+    }
+
+    .or-diff-row {
+        font-size: 7px;
+        padding: 2px 6px;
+    }
+
+    .chart-operate-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .rx-action-operate {
+        font-size: 8px !important;
+        padding: 8px 12px !important;
+        border-width: 2px !important;
+        box-shadow:
+            0 0 6px rgba(56, 232, 232, 0.2),
+            0 2px 0 #040820 !important;
+    }
+
+    .chart-operate-hint {
+        font-size: 6px;
+        text-align: center;
+    }
+
+    /* ── Doctor's Notes mobile ── */
+    .doctor-note-text {
+        font-size: 9px;
+    }
+
+    .dx-hint {
+        font-size: 7px;
+        padding-left: 20px;
+    }
+
+    /* ── Guided mode mobile ── */
+    .guide-card-header {
+        font-size: 9px;
+        padding: 6px 8px;
+    }
+
+    .guide-card-body {
+        padding: 8px;
+    }
+
+    .guide-prescription {
+        font-size: 9px;
+        flex-wrap: wrap;
+    }
+
+    .guide-tag {
+        font-size: 6px;
+    }
+
+    .guide-recommendation {
+        font-size: 8px;
+    }
+
+    .guide-card-actions {
+        padding: 6px 8px;
+        flex-wrap: wrap;
+    }
+
+    .guide-btn {
+        font-size: 7px;
+        padding: 4px 8px;
+    }
+
+    .guide-resume-bar {
+        padding: 4px 8px;
+    }
+
+    .guide-btn-resume {
+        font-size: 7px;
+    }
 }

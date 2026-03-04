@@ -5,6 +5,7 @@ export const auditBtn = document.getElementById('audit-btn');
 export const dialogText = document.getElementById('dialog-text');
 export const dialogArrow = document.getElementById('dialog-arrow');
 export const dialogHint = document.getElementById('dialog-hint');
+export const cancelBtn = document.getElementById('cancel-btn');
 export const relayList = document.getElementById('relay-list');
 export const sprite = document.getElementById('doctor-sprite');
 export const spritePanel = document.getElementById('sprite-panel');
@@ -25,13 +26,19 @@ export function getRelayRow(id) { return document.getElementById(id); }
 /**
  * Returns chart action buttons from a chart container element.
  * @param {HTMLElement} chartEl - Chart container (e.g. cardContainer.firstElementChild)
- * @returns {{ rebroadcast: Element|null, deleteKps: Element|null, unifyRelays: Element|null }}
+ * @returns {{ rebroadcast: Element|null, deleteKps: Element|null, unifyRelays: Element|null, operatingRoom: Element|null }}
  */
 export function getChartActionButtons(chartEl) {
-    if (!chartEl) return { rebroadcast: null, deleteKps: null, unifyRelays: null };
+    if (!chartEl) return {
+        rebroadcast: null, deleteKps: null, unifyRelays: null,
+        operatingRoom: null, deleteOrphanedKps: null, deleteKind4: null,
+    };
     return {
         rebroadcast: chartEl.querySelector('[data-action="rebroadcast"]'),
         deleteKps: chartEl.querySelector('[data-action="delete-kps"]'),
+        deleteOrphanedKps: chartEl.querySelector('[data-action="delete-orphaned-kps"]'),
         unifyRelays: chartEl.querySelector('[data-action="unify-relays"]'),
+        deleteKind4: chartEl.querySelector('[data-action="delete-kind4"]'),
+        operatingRoom: chartEl.querySelector('[data-action="enter-operating-room"]'),
     };
 }
