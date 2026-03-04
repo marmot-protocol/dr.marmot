@@ -61,7 +61,7 @@ function buildDoctorNotesSection(doctorNote) {
         <div class="chart-section">
             <div class="chart-section-label">DOCTOR'S NOTES</div>
             <div class="chart-doctor-notes">
-                <div class="doctor-note-text">${doctorNote}</div>
+                <div class="doctor-note-text">${escapeHtml(doctorNote)}</div>
             </div>
         </div>
     `;
@@ -184,7 +184,7 @@ function buildTreatmentSection(prescriptions, actionFlags, canOperate, auditStat
         return html`
             <div class="rx-row-wrap">
                 <div class="rx-row">
-                    <span class="rx-text">${rxText}</span>
+                    <span class="rx-text">${escapeHtml(rxText)}</span>
                     ${actionButton}
                 </div>
                 ${nakBlock}

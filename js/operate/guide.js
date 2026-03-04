@@ -288,6 +288,8 @@ function isClientSidePrescription(rx) {
     const lower = rx.toLowerCase();
     // NIP-04 migration is now actionable via deleteDeprecatedKind4
     if (lower.includes('migrate from nip-04')) return false;
+    // 'delete events' removed — prescriptions matching that text are handled
+    // by the 'delete-kps' fix action and should not be classified as CLIENT-only.
     const clientPatterns = [
         'encoding',
         '0xf2ee',
@@ -300,7 +302,6 @@ function isClientSidePrescription(rx) {
         'default extensions',
         'stop publishing kind 2',
         'i tag',
-        'delete events',
     ];
     return clientPatterns.some(p => lower.includes(p));
 }

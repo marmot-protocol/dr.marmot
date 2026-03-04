@@ -9,6 +9,17 @@
 
 import { escapeHtml } from './html.js';
 
+const HEX_RE = /^[0-9a-f]{64}$/i;
+
+/**
+ * Validate that a string is a 64-char hex ID (event ID or pubkey).
+ * @param {string} val
+ * @returns {boolean}
+ */
+function isValidHex64(val) {
+    return typeof val === 'string' && HEX_RE.test(val);
+}
+
 /**
  * Generate a nak command string for a given prescription action.
  *
@@ -42,9 +53,10 @@ export function getNakCommand(action, state) {
 }
 
 function buildRebroadcastCmd(pubkey, sourceRelay, relayArgs) {
-    const cmd = `# Rebroadcast profile (k0) and contacts (k3) to all relays\n`
-        + `nak req -k 0 -k 3 -a ${pubkey} ${sourceRelay} | \\\n`
-        + `  nak event ${relayArgs}`;
+    if (!isValidHex64(pubkey)) return null;
+    const cmd = '# Rebroadcast profile (k0) and contacts (k3) to all relays\n'
+        + 'nak req -k 0 -k 3 -a ' + shellQuote(pubkey) + ' ' + sourceRelay + ' | \\\n'
+        + '  nak event ' + relayArgs;
 
     return {
         cmd,
@@ -56,7 +68,10 @@ function buildDeleteKpsCmd(state, relayArgs) {
     const { missingITagIds } = state;
     if (!missingITagIds || missingITagIds.length === 0) return null;
 
-    const eTags = missingITagIds.map(id => '-e ' + id).join(' \\\n  ');
+    const validIds = missingITagIds.filter(isValidHex64);
+    if (validIds.length === 0) return null;
+
+    const eTags = validIds.map(id => '-e ' + shellQuote(id)).join(' \\\n  ');
     const cmd = '# Delete orphaned/invalid KeyPackages (kind 5 deletion)\n'
         + 'nak event -k 5 --sec $NOSTR_SECRET_KEY \\\n'
         + '  ' + eTags + ' \\\n'
@@ -65,7 +80,7 @@ function buildDeleteKpsCmd(state, relayArgs) {
 
     return {
         cmd,
-        description: 'Signs kind 5 deletion events for ' + missingITagIds.length + ' KeyPackage(s) and publishes to all relays. Set NOSTR_SECRET_KEY first.',
+        description: 'Signs kind 5 deletion events for ' + validIds.length + ' KeyPackage(s) and publishes to all relays. Set NOSTR_SECRET_KEY first.',
     };
 }
 
@@ -75,8 +90,9 @@ function buildDeleteOrphanedKpsCmd(state, relayArgs) {
 
     const orphanRelayArgs = orphanedKpRelays.map(shellQuote).join(' ');
     const pk = state.pubkey;
+    if (!isValidHex64(pk)) return null;
     const cmd = '# Step 1: Find KeyPackage IDs on orphaned relays\n'
-        + 'nak req -k 443 -a ' + pk + ' ' + orphanRelayArgs + '\n\n'
+        + 'nak req -k 443 -a ' + shellQuote(pk) + ' ' + orphanRelayArgs + '\n\n'
         + '# Step 2: Delete them (replace <event-id> with IDs from step 1)\n'
         + 'nak event -k 5 --sec $NOSTR_SECRET_KEY \\\n'
         + '  -e <event-id> \\\n'
@@ -103,8 +119,8 @@ function buildUnifyCmd(state, relayArgs) {
     // Build k3 relay tags + preserve p-tags
     const relayTags = merged.map(r => '--tag ' + shellQuote('relay=' + r)).join(' \\\n  ');
     const pTags = (bestK3?.tags || [])
-        .filter(t => Array.isArray(t) && t[0] === 'p' && t[1])
-        .map(t => '-p ' + t[1])
+        .filter(t => Array.isArray(t) && t[0] === 'p' && t[1] && isValidHex64(t[1]))
+        .map(t => '-p ' + shellQuote(t[1]))
         .join(' \\\n  ');
 
     const cmd = '# Publish unified kind 10002 (NIP-65 relay list)\n'
@@ -126,10 +142,12 @@ function buildUnifyCmd(state, relayArgs) {
 }
 
 function buildDeleteKind4Cmd(pubkey, relayArgs) {
+    if (!isValidHex64(pubkey)) return null;
+    const qpk = shellQuote(pubkey);
     const cmd = '# Step 1: Find all kind 4 (NIP-04 DM) event IDs\n'
-        + 'nak req -k 4 -a ' + pubkey + ' ' + relayArgs + '\n\n'
+        + 'nak req -k 4 -a ' + qpk + ' ' + relayArgs + '\n\n'
         + '# Step 2: Delete them (pipe IDs or list them manually)\n'
-        + 'nak req -k 4 -a ' + pubkey + ' ' + relayArgs + ' | \\\n'
+        + 'nak req -k 4 -a ' + qpk + ' ' + relayArgs + ' | \\\n'
         + "  jq -r '.id' | \\\n"
         + '  xargs -I {} nak event -k 5 --sec $NOSTR_SECRET_KEY \\\n'
         + '    -e {} \\\n'
