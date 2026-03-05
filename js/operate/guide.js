@@ -152,13 +152,13 @@ export function renderGuideCard(step) {
     const doctorNote = speak('guideStepNote', { step: step.index + 1, total: steps.length })
         || '';
 
-    const requiresNip07 = !window.nostr;
+    const isNip07Required = !window.nostr;
     const fixBtn = step.fixAction
         ? html`
             <button class="guide-btn guide-btn-fix"
                     data-action="guide-fix"
                     data-fix-action="${step.fixAction}"
-                    ${requiresNip07 ? 'disabled title="Requires NIP-07 extension"' : ''}
+                    ${isNip07Required ? 'disabled title="Requires NIP-07 extension"' : ''}
                     >⚕ FIX IT</button>
         `
         : '';
@@ -240,8 +240,8 @@ function getTargetKindForPrescription(rx) {
     const lower = rx.toLowerCase();
 
     // Check for multi-kind prescriptions first
-    const multiKind = ['k3 / k10002', 'k3/k10002', 'unify'].some(p => lower.includes(p));
-    if (multiKind) return 10002; // Primary target is k10002
+    const isMultiKind = ['k3 / k10002', 'k3/k10002', 'unify'].some(p => lower.includes(p));
+    if (isMultiKind) return 10002; // Primary target is k10002
 
     for (const [kind, patterns] of Object.entries(KIND_PATTERNS)) {
         if (patterns.some(p => lower.includes(p.toLowerCase()))) {
