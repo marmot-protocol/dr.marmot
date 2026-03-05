@@ -212,6 +212,9 @@ body[data-mode="jeff"] .result-section,
 body[data-mode="jeff"] .patient-chart {
     flex: 0 0 300px;
     min-width: 280px;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
     background: var(--c-panel-bg);
     border: 0.5px solid var(--c-border);
     border-radius: 8px;
@@ -299,15 +302,41 @@ body[data-mode="jeff"] .relay-row.error .relay-dot {
     box-shadow: none;
 }
 
-body[data-mode="jeff"] .relay-row.connecting .relay-dot { background: var(--c-yellow); }
-body[data-mode="jeff"] .relay-row.ok .relay-dot { background: var(--c-green); }
-body[data-mode="jeff"] .relay-row.warn .relay-dot { background: var(--c-yellow); }
-body[data-mode="jeff"] .relay-row.error .relay-dot { background: var(--c-red); }
+body[data-mode="jeff"] .relay-row.connecting .relay-dot {
+    background: var(--c-yellow);
+}
 
-body[data-mode="jeff"] .relay-row.connecting { border-color: var(--c-border); background: rgba(191, 134, 0, 0.03); }
-body[data-mode="jeff"] .relay-row.ok { border-color: var(--c-border); background: rgba(36, 138, 61, 0.03); }
-body[data-mode="jeff"] .relay-row.warn { border-color: var(--c-border); background: rgba(191, 134, 0, 0.03); }
-body[data-mode="jeff"] .relay-row.error { border-color: var(--c-border); background: rgba(215, 0, 21, 0.03); }
+body[data-mode="jeff"] .relay-row.ok .relay-dot {
+    background: var(--c-green);
+}
+
+body[data-mode="jeff"] .relay-row.warn .relay-dot {
+    background: var(--c-yellow);
+}
+
+body[data-mode="jeff"] .relay-row.error .relay-dot {
+    background: var(--c-red);
+}
+
+body[data-mode="jeff"] .relay-row.connecting {
+    border-color: var(--c-border);
+    background: rgba(191, 134, 0, 0.03);
+}
+
+body[data-mode="jeff"] .relay-row.ok {
+    border-color: var(--c-border);
+    background: rgba(36, 138, 61, 0.03);
+}
+
+body[data-mode="jeff"] .relay-row.warn {
+    border-color: var(--c-border);
+    background: rgba(191, 134, 0, 0.03);
+}
+
+body[data-mode="jeff"] .relay-row.error {
+    border-color: var(--c-border);
+    background: rgba(215, 0, 21, 0.03);
+}
 
 body[data-mode="jeff"] .relay-row.connecting .relay-dot {
     animation: none;
@@ -321,10 +350,10 @@ body[data-mode="jeff"] .relay-row.connecting .relay-dot {
 body[data-mode="jeff"] .result-section {
     border-top: none;
     margin-top: 0;
-    padding-top: 0;
+    padding-top: 8px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
 }
 
 body[data-mode="jeff"] .result-section-title {
@@ -340,15 +369,22 @@ body[data-mode="jeff"] .result-section-title {
 }
 
 body[data-mode="jeff"] .result-row {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 8px;
     font-family: var(--jeff-font);
     font-size: 11px;
-    line-height: 1.45;
-    padding: 2px 0;
+    line-height: 1.5;
+    padding: 3px 0;
+    overflow-wrap: anywhere;
 }
 
 body[data-mode="jeff"] .result-icon {
     font-size: 10px;
     width: 14px;
+    text-align: center;
+    line-height: 1.2;
 }
 
 body[data-mode="jeff"] .pop-in {
@@ -562,6 +598,8 @@ body[data-mode="jeff"] #nip07-btn:disabled {
 body[data-mode="jeff"] .patient-chart {
     animation: none;
     margin-top: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
@@ -603,8 +641,12 @@ body[data-mode="jeff"] .chart-date {
 }
 
 body[data-mode="jeff"] .chart-body {
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 10px;
     gap: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 body[data-mode="jeff"] .chart-section {
@@ -651,9 +693,20 @@ body[data-mode="jeff"] .chart-hp-fill {
     border-radius: 2px;
 }
 
-body[data-mode="jeff"] .chart-hp-fill.hp-full { background: var(--c-green); box-shadow: none; }
-body[data-mode="jeff"] .chart-hp-fill.hp-warn { background: var(--c-yellow); box-shadow: none; }
-body[data-mode="jeff"] .chart-hp-fill.hp-crit { background: var(--c-red); box-shadow: none; }
+body[data-mode="jeff"] .chart-hp-fill.hp-full {
+    background: var(--c-green);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .chart-hp-fill.hp-warn {
+    background: var(--c-yellow);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .chart-hp-fill.hp-crit {
+    background: var(--c-red);
+    box-shadow: none;
+}
 
 body[data-mode="jeff"] .chart-hp-fill::after {
     display: none;
@@ -696,11 +749,18 @@ body[data-mode="jeff"] .dx-icon {
 }
 
 body[data-mode="jeff"] .rx-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    column-gap: 0;
+    row-gap: 4px;
     font-family: var(--jeff-font);
     font-size: 11px;
     line-height: 1.4;
     color: var(--c-white);
     padding: 2px 0 2px 16px;
+    max-height: 180px;
+    overflow-y: auto;
 }
 
 body[data-mode="jeff"] .rx-row::before {
@@ -710,6 +770,20 @@ body[data-mode="jeff"] .rx-row::before {
 
 body[data-mode="jeff"] .rx-text {
     font-size: 11px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+body[data-mode="jeff"] .chart-treatment {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+body[data-mode="jeff"] .rx-row-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 body[data-mode="jeff"] .rx-action-btn {
@@ -723,6 +797,9 @@ body[data-mode="jeff"] .rx-action-btn {
     color: var(--c-green);
     cursor: pointer;
     letter-spacing: 0;
+    justify-self: start;
+    align-self: start;
+    margin-top: 2px;
 }
 
 body[data-mode="jeff"] .rx-action-btn::before {
@@ -801,6 +878,1102 @@ body[data-mode="jeff"] #jeff-footer a {
 
 body[data-mode="jeff"] #jeff-footer a:hover {
     text-decoration: underline;
+}
+
+
+/* ══════════════════════════════════════════
+   OPERATING ROOM — Clean relay management
+══════════════════════════════════════════ */
+
+/* ── Editor Container ── */
+body[data-mode="jeff"] .or-editor {
+    gap: 10px;
+    animation: none;
+    max-height: 100%;
+    overflow-y: scroll;
+}
+
+/* ── Header ── */
+body[data-mode="jeff"] .or-editor-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--c-panel-bg);
+    border: 0.5px solid var(--c-border);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px var(--c-shadow);
+}
+
+body[data-mode="jeff"] .or-editor-header::before,
+body[data-mode="jeff"] .or-editor-header::after {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-editor-title {
+    font-family: var(--jeff-font-display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-white);
+    letter-spacing: 0;
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .or-editor-subtitle {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--c-dim);
+    letter-spacing: 0;
+    opacity: 1;
+}
+
+/* ── Relay Trays ── */
+body[data-mode="jeff"] .or-tray {
+    border: 0.5px solid var(--c-border);
+    border-radius: 8px;
+    background: var(--c-panel-bg);
+    box-shadow: 0 1px 2px var(--c-shadow);
+    animation: none;
+    transition: border-color 0.15s;
+}
+
+body[data-mode="jeff"] .or-tray:hover {
+    border-color: var(--c-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+body[data-mode="jeff"] .or-tray-highlighted {
+    border-color: var(--c-cyan) !important;
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.12) !important;
+}
+
+body[data-mode="jeff"] .or-tray-highlighted>.or-tray-header {
+    background: rgba(0, 113, 227, 0.04);
+}
+
+body[data-mode="jeff"] .or-tray-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    background: transparent;
+    border-bottom: 0.5px solid var(--c-border);
+    user-select: none;
+    transition: background 0.15s;
+    position: relative;
+}
+
+body[data-mode="jeff"] .or-tray-header::before {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-tray-header:hover {
+    background: var(--c-bg);
+}
+
+body[data-mode="jeff"] .or-tray-collapsed .or-tray-header {
+    border-bottom: none;
+}
+
+body[data-mode="jeff"] .or-tray-icon {
+    font-size: 14px;
+    line-height: 1;
+    filter: none;
+}
+
+body[data-mode="jeff"] .or-tray-title {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--c-white);
+    letter-spacing: 0;
+    text-shadow: none;
+    flex: 1;
+}
+
+body[data-mode="jeff"] .or-tray-tag {
+    font-family: var(--jeff-font-mono);
+    font-size: 9px;
+    color: var(--c-dim);
+    padding: 1px 5px;
+    border: 0.5px solid var(--c-border);
+    border-radius: 3px;
+    letter-spacing: 0;
+    background: var(--c-bg);
+}
+
+body[data-mode="jeff"] .or-tray-count {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    color: var(--c-dim);
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .or-tray-arrow {
+    font-size: 10px;
+    color: var(--c-dim);
+    text-shadow: none;
+    transition: transform 0.2s;
+}
+
+body[data-mode="jeff"] .or-tray-body {
+    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: transparent;
+}
+
+/* ── Staged Badge ── */
+body[data-mode="jeff"] .or-staged-badge {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--c-cyan);
+    background: rgba(0, 113, 227, 0.08);
+    border: 0.5px solid var(--c-cyan);
+    border-radius: 3px;
+    padding: 1px 5px;
+    letter-spacing: 0;
+    text-shadow: none;
+    animation: none;
+}
+
+/* ── Relay Rows ── */
+body[data-mode="jeff"] .or-relay-row {
+    display: grid;
+    grid-template-columns: 14px 8px 1fr auto auto auto auto;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    border: 0.5px solid var(--c-border);
+    border-radius: 5px;
+    background: var(--c-panel-bg);
+    transition: background 0.15s;
+    position: relative;
+}
+
+body[data-mode="jeff"] .or-relay-row:nth-child(even) {
+    background: var(--c-bg);
+}
+
+body[data-mode="jeff"] .or-relay-row:hover {
+    background: var(--c-bg);
+    border-color: var(--c-border);
+}
+
+/* Change icon */
+body[data-mode="jeff"] .or-change-icon {
+    font-size: 12px;
+    font-weight: 600;
+    width: 14px;
+    text-align: center;
+}
+
+body[data-mode="jeff"] .or-change-add {
+    color: var(--c-green);
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .or-change-remove {
+    color: var(--c-red);
+    text-shadow: none;
+}
+
+/* Status dot */
+body[data-mode="jeff"] .or-relay-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c-dim);
+    border: none;
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-health-ok .or-relay-dot {
+    background: var(--c-green);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-health-warn .or-relay-dot {
+    background: var(--c-yellow);
+    box-shadow: none;
+    animation: none;
+}
+
+body[data-mode="jeff"] .or-health-dead .or-relay-dot {
+    background: var(--c-red);
+    box-shadow: none;
+}
+
+/* URL */
+body[data-mode="jeff"] .or-relay-url {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    color: var(--c-white);
+}
+
+body[data-mode="jeff"] .or-staged .or-relay-url {
+    color: var(--c-green);
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .or-removed .or-relay-url {
+    color: var(--c-red);
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+body[data-mode="jeff"] .or-staged {
+    border-color: var(--c-green);
+    border-style: dashed;
+    background: rgba(36, 138, 61, 0.04);
+    animation: none;
+}
+
+body[data-mode="jeff"] .or-removed {
+    border-color: var(--c-red);
+    border-style: dashed;
+    background: rgba(215, 0, 21, 0.04);
+}
+
+/* Read/Write toggles */
+body[data-mode="jeff"] .or-rw-toggles {
+    display: flex;
+    gap: 2px;
+}
+
+body[data-mode="jeff"] .or-rw-btn {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 5px;
+    background: var(--c-bg);
+    color: var(--c-dim);
+    border: 0.5px solid var(--c-border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+    position: relative;
+}
+
+body[data-mode="jeff"] .or-rw-btn.or-rw-active {
+    color: var(--c-cyan);
+    border-color: var(--c-cyan);
+    background: rgba(0, 113, 227, 0.06);
+    text-shadow: none;
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-rw-btn.or-rw-active::before {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-rw-btn:hover {
+    border-color: var(--c-cyan);
+    color: var(--c-cyan);
+    text-shadow: none;
+}
+
+/* Latency */
+body[data-mode="jeff"] .or-relay-latency {
+    font-family: var(--jeff-font-mono);
+    font-size: 9px;
+    color: var(--c-dim);
+}
+
+body[data-mode="jeff"] .or-health-ok .or-relay-latency {
+    color: var(--c-green);
+}
+
+body[data-mode="jeff"] .or-health-warn .or-relay-latency {
+    color: var(--c-yellow);
+}
+
+body[data-mode="jeff"] .or-health-dead .or-relay-latency {
+    color: var(--c-red);
+}
+
+/* Mini HP bar */
+body[data-mode="jeff"] .or-relay-hp {
+    display: flex;
+    align-items: center;
+    min-width: 40px;
+}
+
+body[data-mode="jeff"] .or-hp-track {
+    width: 100%;
+    height: 4px;
+    background: var(--c-bg);
+    border: 0.5px solid var(--c-border);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-hp-fill {
+    height: 100%;
+    border-radius: 1.5px;
+    background: var(--c-green);
+    box-shadow: none;
+    transition: width 0.3s ease;
+}
+
+body[data-mode="jeff"] .or-hp-fill::after {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-health-warn .or-hp-fill {
+    background: var(--c-yellow);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-health-dead .or-hp-fill {
+    background: var(--c-red);
+    box-shadow: none;
+}
+
+/* Action buttons (remove, undo) */
+body[data-mode="jeff"] .or-relay-action {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--c-panel-bg);
+    border: 0.5px solid var(--c-border);
+    border-radius: 4px;
+    color: var(--c-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+    position: static;
+}
+
+body[data-mode="jeff"] .or-relay-action::before {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-remove-btn:hover {
+    color: var(--c-red);
+    border-color: var(--c-red);
+    background: rgba(215, 0, 21, 0.04);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-undo-btn {
+    color: var(--c-yellow);
+    border-color: var(--c-yellow);
+    background: var(--c-panel-bg);
+}
+
+body[data-mode="jeff"] .or-undo-btn:hover {
+    background: rgba(191, 134, 0, 0.06);
+    box-shadow: none;
+}
+
+/* ── Add Relay ── */
+body[data-mode="jeff"] .or-add-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 0.5px solid var(--c-border);
+}
+
+body[data-mode="jeff"] .or-add-input {
+    flex: 1;
+    font-family: var(--jeff-font-mono);
+    font-size: 11px;
+    padding: 5px 8px;
+    background: var(--c-bg);
+    color: var(--c-white);
+    border: 0.5px solid var(--c-border);
+    border-radius: 5px;
+    box-shadow: none;
+    caret-color: var(--c-cyan);
+    outline: none;
+}
+
+body[data-mode="jeff"] .or-add-input::placeholder {
+    color: var(--c-dim);
+}
+
+body[data-mode="jeff"] .or-add-input:focus {
+    border-color: var(--c-cyan);
+    box-shadow: 0 0 0 2.5px rgba(0, 113, 227, 0.12);
+}
+
+body[data-mode="jeff"] .or-add-btn {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 10px;
+    background: var(--c-panel-bg);
+    color: var(--c-green);
+    border: 0.5px solid var(--c-green);
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    position: static;
+    overflow: visible;
+}
+
+body[data-mode="jeff"] .or-add-btn::before {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-add-btn:hover {
+    background: rgba(36, 138, 61, 0.06);
+    color: var(--c-green);
+    border-color: var(--c-green);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-add-btn:active {
+    background: rgba(36, 138, 61, 0.12);
+    transform: none;
+}
+
+body[data-mode="jeff"] .or-add-error {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    color: var(--c-red);
+    padding: 2px 8px;
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .or-empty {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    color: var(--c-dim);
+    padding: 12px;
+    text-align: center;
+    border: 0.5px dashed var(--c-border);
+    border-radius: 5px;
+    background: var(--c-bg);
+}
+
+/* ── Bottom Actions ── */
+body[data-mode="jeff"] .or-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 0.5px solid var(--c-border);
+    border-radius: 8px;
+    background: var(--c-panel-bg);
+    box-shadow: 0 1px 2px var(--c-shadow);
+    animation: none;
+}
+
+body[data-mode="jeff"] .or-staged-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: rgba(0, 113, 227, 0.04);
+    border: 0.5px solid var(--c-cyan);
+    border-radius: 5px;
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-staged-count {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--c-cyan);
+    letter-spacing: 0;
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .or-discard-btn {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    background: var(--c-panel-bg);
+    color: var(--c-red);
+    border: 0.5px solid var(--c-red);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: static;
+}
+
+body[data-mode="jeff"] .or-discard-btn::before {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-discard-btn:hover {
+    background: rgba(215, 0, 21, 0.05);
+    box-shadow: none;
+}
+
+/* OPERATE button */
+body[data-mode="jeff"] .or-operate-btn {
+    font-family: var(--jeff-font);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    background: var(--c-cyan);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0;
+    white-space: nowrap;
+    transition: background 0.15s;
+    position: static;
+    overflow: visible;
+    text-align: center;
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-operate-btn::before {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-operate-btn:hover {
+    background: #0077ed;
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
+}
+
+body[data-mode="jeff"] .or-operate-btn:active {
+    background: #006adb;
+    box-shadow: none;
+    transform: none;
+}
+
+body[data-mode="jeff"] .or-operate-icon {
+    font-size: 14px;
+    filter: none;
+}
+
+body[data-mode="jeff"] .or-no-changes {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    color: var(--c-dim);
+    text-align: center;
+    padding: 8px;
+    border: 0.5px dashed var(--c-border);
+    border-radius: 5px;
+}
+
+/* BACK TO CHART button */
+body[data-mode="jeff"] .or-close-btn {
+    font-family: var(--jeff-font);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 14px;
+    background: var(--c-panel-bg);
+    color: var(--c-dim);
+    border: 0.5px solid var(--c-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    position: static;
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-close-btn::before {
+    display: none;
+}
+
+body[data-mode="jeff"] .or-close-btn:hover {
+    background: var(--c-bg);
+    color: var(--c-white);
+    border-color: var(--c-border);
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-close-btn:active {
+    background: var(--c-bg);
+    transform: none;
+    box-shadow: none;
+}
+
+/* ── Diff Preview ── */
+body[data-mode="jeff"] .or-diff-preview {
+    border: 0.5px solid var(--c-border);
+    border-radius: 6px;
+    background: var(--c-bg);
+    padding: 10px;
+    box-shadow: none;
+}
+
+body[data-mode="jeff"] .or-diff-section {
+    margin-bottom: 8px;
+}
+
+body[data-mode="jeff"] .or-diff-title {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--c-dim);
+    text-transform: uppercase;
+    letter-spacing: 0;
+    margin-bottom: 4px;
+    text-shadow: none;
+    padding-bottom: 3px;
+    border-bottom: 0.5px solid var(--c-border);
+}
+
+body[data-mode="jeff"] .or-diff-row {
+    font-family: var(--jeff-font-mono);
+    font-size: 11px;
+    padding: 2px 6px;
+    line-height: 1.5;
+}
+
+body[data-mode="jeff"] .or-diff-add {
+    color: var(--c-green);
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .or-diff-remove {
+    color: var(--c-red);
+    text-shadow: none;
+}
+
+body[data-mode="jeff"] .or-diff-modify {
+    color: var(--c-yellow);
+    text-shadow: none;
+}
+
+/* ── OR Button on Patient Chart ── */
+body[data-mode="jeff"] .chart-operate-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 10px;
+    border: 0.5px solid var(--c-cyan);
+    border-radius: 6px;
+    background: rgba(0, 113, 227, 0.03);
+    text-align: center;
+}
+
+body[data-mode="jeff"] .rx-action-operate {
+    font-family: var(--jeff-font) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 8px 16px !important;
+    background: var(--c-cyan) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    letter-spacing: 0 !important;
+    box-shadow: none !important;
+}
+
+body[data-mode="jeff"] .rx-action-operate::before {
+    display: none !important;
+}
+
+body[data-mode="jeff"] .rx-action-operate:hover:not(:disabled) {
+    background: #0077ed !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+body[data-mode="jeff"] .rx-action-operate:active:not(:disabled) {
+    background: #006adb !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+body[data-mode="jeff"] .chart-operate-hint {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    color: var(--c-dim);
+    line-height: 1.4;
+}
+
+/* ── NAK Command Blocks ── */
+body[data-mode="jeff"] .rx-nak-toggle,
+body[data-mode="jeff"] .guide-nak-toggle {
+    padding: 2px 0 3px 14px;
+}
+
+body[data-mode="jeff"] .nak-toggle-btn {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    padding: 1px 6px;
+    background: var(--c-bg);
+    border: 0.5px solid var(--c-border);
+    border-radius: 3px;
+    color: var(--c-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+body[data-mode="jeff"] .nak-toggle-btn:hover {
+    color: var(--c-cyan);
+    border-color: var(--c-cyan);
+    background: rgba(0, 113, 227, 0.04);
+}
+
+body[data-mode="jeff"] .rx-nak-container,
+body[data-mode="jeff"] .guide-nak-container {
+    padding: 0 0 4px 14px;
+}
+
+body[data-mode="jeff"] .nak-cmd-block {
+    border: 0.5px solid var(--c-border);
+    border-radius: 6px;
+    background: var(--c-bg);
+    margin-top: 3px;
+    overflow: hidden;
+}
+
+body[data-mode="jeff"] .nak-cmd-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    background: var(--c-panel-bg);
+    border-bottom: 0.5px solid var(--c-border);
+}
+
+body[data-mode="jeff"] .nak-cmd-label {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--c-dim);
+    letter-spacing: 0;
+}
+
+body[data-mode="jeff"] .nak-copy-btn {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 1px 6px;
+    background: var(--c-panel-bg);
+    border: 0.5px solid var(--c-cyan);
+    border-radius: 3px;
+    color: var(--c-cyan);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+body[data-mode="jeff"] .nak-copy-btn:hover {
+    background: var(--c-cyan);
+    color: #ffffff;
+}
+
+body[data-mode="jeff"] .nak-cmd-desc {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    color: var(--c-dim);
+    padding: 4px 8px;
+    line-height: 1.4;
+}
+
+body[data-mode="jeff"] .nak-cmd-pre {
+    padding: 6px 8px;
+}
+
+body[data-mode="jeff"] .nak-cmd-pre code {
+    font-family: var(--jeff-font-mono);
+    font-size: 10px;
+    color: var(--c-white);
+    line-height: 1.5;
+}
+
+/* ── Doctor's Notes ── */
+body[data-mode="jeff"] .chart-doctor-notes {
+    padding: 4px 6px;
+}
+
+body[data-mode="jeff"] .doctor-note-text {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--c-dim);
+    border-left: 2px solid var(--c-border);
+    font-style: normal;
+}
+
+body[data-mode="jeff"] .dx-hint {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    color: var(--c-dim);
+    border-left: 1px solid var(--c-border);
+    font-style: normal;
+}
+
+/* ── Findings groups ── */
+body[data-mode="jeff"] .dx-group-label {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    letter-spacing: 0;
+}
+
+body[data-mode="jeff"] .dx-group-label.dx-fail {
+    color: var(--c-red);
+}
+
+body[data-mode="jeff"] .dx-group-label.dx-warn {
+    color: var(--c-yellow);
+}
+
+body[data-mode="jeff"] .dx-group-label.dx-pass {
+    color: var(--c-green);
+}
+
+body[data-mode="jeff"] .dx-group-count {
+    font-size: 10px;
+}
+
+body[data-mode="jeff"] .dx-group-toggle {
+    font-size: 10px;
+}
+
+
+/* ══════════════════════════════════════════
+   GUIDED MODE — Clean step-by-step cards
+══════════════════════════════════════════ */
+
+body[data-mode="jeff"] .guide-card {
+    border: 0.5px solid var(--c-border);
+    border-radius: 8px;
+    background: var(--c-panel-bg);
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px var(--c-shadow);
+    width: 50%;
+}
+
+body[data-mode="jeff"] .guide-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--c-bg);
+    border-bottom: 0.5px solid var(--c-border);
+    border-radius: 8px 8px 0 0;
+    font-family: var(--jeff-font);
+    font-size: 11px;
+}
+
+body[data-mode="jeff"] .guide-card-icon {
+    font-size: 13px;
+}
+
+body[data-mode="jeff"] .guide-card-title {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--c-white);
+    text-transform: uppercase;
+}
+
+body[data-mode="jeff"] .guide-card-progress {
+    margin-left: auto;
+    font-family: var(--jeff-font-mono);
+    font-size: 10px;
+    color: var(--c-cyan);
+    font-weight: 500;
+}
+
+body[data-mode="jeff"] .guide-card-kind {
+    font-family: var(--jeff-font-mono);
+    font-size: 9px;
+    background: rgba(0, 113, 227, 0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--c-cyan);
+    border: 0.5px solid rgba(0, 113, 227, 0.2);
+}
+
+body[data-mode="jeff"] .guide-card-body {
+    padding: 10px;
+}
+
+body[data-mode="jeff"] .guide-prescription {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-family: var(--jeff-font);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+body[data-mode="jeff"] .guide-rx-text {
+    color: var(--c-white);
+}
+
+body[data-mode="jeff"] .guide-tag {
+    font-family: var(--jeff-font);
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0;
+}
+
+body[data-mode="jeff"] .guide-tag-actionable {
+    background: rgba(36, 138, 61, 0.08);
+    color: var(--c-green);
+    border: 0.5px solid rgba(36, 138, 61, 0.3);
+}
+
+body[data-mode="jeff"] .guide-tag-manual {
+    background: rgba(191, 134, 0, 0.08);
+    color: var(--c-yellow);
+    border: 0.5px solid rgba(191, 134, 0, 0.3);
+}
+
+body[data-mode="jeff"] .guide-tag-client {
+    background: rgba(215, 0, 21, 0.08);
+    color: var(--c-red);
+    border: 0.5px solid rgba(215, 0, 21, 0.3);
+}
+
+body[data-mode="jeff"] .guide-recommendation {
+    margin-top: 6px;
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    color: var(--c-dim);
+    border-left: 2px solid var(--c-border);
+    padding-left: 8px;
+    line-height: 1.45;
+    font-style: normal;
+}
+
+body[data-mode="jeff"] .guide-doctor-note {
+    margin-top: 4px;
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    color: var(--c-dim);
+    opacity: 1;
+}
+
+body[data-mode="jeff"] .guide-card-actions {
+    display: flex;
+    gap: 4px;
+    padding: 6px 10px;
+    border-top: 0.5px solid var(--c-border);
+}
+
+body[data-mode="jeff"] .guide-btn {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border: 0.5px solid var(--c-border);
+    border-radius: 4px;
+    background: var(--c-panel-bg);
+    color: var(--c-dim);
+    cursor: pointer;
+    letter-spacing: 0;
+    transition: all 0.15s;
+}
+
+body[data-mode="jeff"] .guide-btn:hover {
+    background: var(--c-bg);
+    color: var(--c-white);
+}
+
+body[data-mode="jeff"] .guide-btn-next {
+    margin-left: auto;
+    background: var(--c-cyan);
+    border-color: var(--c-cyan);
+    color: #ffffff;
+}
+
+body[data-mode="jeff"] .guide-btn-next:hover {
+    background: #0077ed;
+    color: #ffffff;
+}
+
+body[data-mode="jeff"] .guide-btn-fix {
+    background: var(--c-panel-bg);
+    border-color: var(--c-green);
+    color: var(--c-green);
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+body[data-mode="jeff"] .guide-btn-fix:hover:not(:disabled) {
+    background: rgba(36, 138, 61, 0.06);
+    color: var(--c-green);
+}
+
+body[data-mode="jeff"] .guide-btn-fix:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+body[data-mode="jeff"] .guide-btn-skip {
+    opacity: 0.7;
+}
+
+body[data-mode="jeff"] .guide-btn-manual {
+    font-size: 10px;
+    opacity: 0.6;
+}
+
+/* ── Guide resume bar ── */
+body[data-mode="jeff"] .guide-resume-bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 6px;
+    background: var(--c-panel-bg);
+    border-bottom: 0.5px solid var(--c-cyan);
+    backdrop-filter: blur(8px);
+}
+
+body[data-mode="jeff"] .guide-btn-resume {
+    font-family: var(--jeff-font);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border: 0.5px solid var(--c-cyan);
+    border-radius: 5px;
+    background: rgba(0, 113, 227, 0.04);
+    color: var(--c-cyan);
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    letter-spacing: 0;
+    transition: all 0.15s;
+    animation: none;
+}
+
+body[data-mode="jeff"] .guide-btn-resume:hover {
+    background: rgba(0, 113, 227, 0.08);
+    color: var(--c-cyan);
+}
+
+/* ── Relay collapse toggle ── */
+body[data-mode="jeff"] .relay-collapse-toggle {
+    font-family: var(--jeff-font);
+    font-size: 10px;
+    color: var(--c-dim);
+    background: none;
+    border: 0.5px solid var(--c-border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+body[data-mode="jeff"] .relay-collapse-toggle:hover {
+    color: var(--c-cyan);
+    border-color: var(--c-cyan);
 }
 
 
@@ -917,11 +2090,136 @@ body[data-mode="jeff"] #jeff-footer a:hover {
     }
 
     body[data-mode="jeff"] .rx-row {
-        flex-wrap: wrap;
+        grid-template-columns: minmax(0, 1fr);
         gap: 4px;
+    }
+
+    body[data-mode="jeff"] .rx-action-btn {
+        justify-self: start;
     }
 
     body[data-mode="jeff"] #jeff-footer {
         padding: 12px 16px 20px;
+    }
+
+    /* ── Operating Room mobile ── */
+    body[data-mode="jeff"] .or-editor-header {
+        padding: 8px 10px;
+    }
+
+    body[data-mode="jeff"] .or-editor-title {
+        font-size: 12px;
+    }
+
+    body[data-mode="jeff"] .or-tray-header {
+        padding: 6px 10px;
+        gap: 6px;
+    }
+
+    body[data-mode="jeff"] .or-tray-title {
+        font-size: 10px;
+    }
+
+    body[data-mode="jeff"] .or-tray-body {
+        padding: 4px 8px;
+    }
+
+    body[data-mode="jeff"] .or-relay-row {
+        grid-template-columns: 12px 6px 1fr auto auto;
+        gap: 4px;
+        padding: 4px 6px;
+        font-size: 10px;
+    }
+
+    body[data-mode="jeff"] .or-relay-latency {
+        display: block;
+        width: 100%;
+        padding-left: 18px;
+        margin-top: 2px;
+    }
+
+    body[data-mode="jeff"] .or-relay-hp {
+        width: 100%;
+        padding-left: 18px;
+        margin-top: 2px;
+    }
+
+    body[data-mode="jeff"] .or-rw-btn {
+        font-size: 8px;
+        padding: 1px 4px;
+    }
+
+    body[data-mode="jeff"] .or-add-input {
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+
+    body[data-mode="jeff"] .or-add-btn {
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+
+    body[data-mode="jeff"] .or-operate-btn {
+        font-size: 12px;
+        padding: 8px 14px;
+    }
+
+    body[data-mode="jeff"] .or-close-btn {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+
+    body[data-mode="jeff"] .or-diff-row {
+        font-size: 10px;
+    }
+
+    /* ── Guided mode mobile ── */
+    body[data-mode="jeff"] .guide-card-header {
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+
+    body[data-mode="jeff"] .guide-card-body {
+        padding: 8px;
+    }
+
+    body[data-mode="jeff"] .guide-prescription {
+        font-size: 11px;
+        flex-wrap: wrap;
+    }
+
+    body[data-mode="jeff"] .guide-tag {
+        font-size: 8px;
+    }
+
+    body[data-mode="jeff"] .guide-recommendation {
+        font-size: 10px;
+    }
+
+    body[data-mode="jeff"] .guide-card-actions {
+        padding: 4px 8px;
+        flex-wrap: wrap;
+    }
+
+    body[data-mode="jeff"] .guide-btn {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+
+    body[data-mode="jeff"] .guide-resume-bar {
+        padding: 4px 6px;
+    }
+
+    body[data-mode="jeff"] .guide-btn-resume {
+        font-size: 10px;
+    }
+
+    /* ── NAK commands mobile ── */
+    body[data-mode="jeff"] .nak-cmd-pre code {
+        font-size: 9px;
+    }
+
+    body[data-mode="jeff"] .nak-toggle-btn {
+        font-size: 9px;
     }
 }

@@ -1168,8 +1168,15 @@ body {
 }
 
 @keyframes nip07-pulse {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 0.6; }
+
+    0%,
+    100% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
 }
 
 #cancel-btn {
@@ -1494,23 +1501,53 @@ body {
 
 /* ── Keyframes ── */
 @keyframes or-cursor-bob {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(0.375ch); }
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(0.375ch);
+    }
 }
 
 @keyframes or-heartbeat {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.2); opacity: 0.7; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
 }
 
 @keyframes or-slide-in {
-    0% { transform: translateY(0.75ch); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
+    0% {
+        transform: translateY(0.75ch);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 @keyframes or-staged-glow {
-    0%, 100% { box-shadow: inset 0 0 0 0.125ch rgba(56, 232, 88, 0.15); }
-    50% { box-shadow: inset 0 0 0 0.125ch rgba(56, 232, 88, 0.4), 0 0 0.75ch rgba(56, 232, 88, 0.15); }
+
+    0%,
+    100% {
+        box-shadow: inset 0 0 0 0.125ch rgba(56, 232, 88, 0.15);
+    }
+
+    50% {
+        box-shadow: inset 0 0 0 0.125ch rgba(56, 232, 88, 0.4), 0 0 0.75ch rgba(56, 232, 88, 0.15);
+    }
 }
 
 /* ── Editor Container: SNES menu frame ── */
@@ -1546,8 +1583,15 @@ body {
     text-shadow: 0 0 0.75ch var(--c-yellow);
 }
 
-.or-editor-header::before { top: -0.25ch; left: 0.5ch; }
-.or-editor-header::after { top: -0.25ch; right: 0.5ch; }
+.or-editor-header::before {
+    top: -0.25ch;
+    left: 0.5ch;
+}
+
+.or-editor-header::after {
+    top: -0.25ch;
+    right: 0.5ch;
+}
 
 .or-editor-title {
     font-size: 1.25ch;
@@ -1575,10 +1619,21 @@ body {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.or-tray:nth-child(2) { animation-delay: 0.05s; }
-.or-tray:nth-child(3) { animation-delay: 0.1s; }
-.or-tray:nth-child(4) { animation-delay: 0.15s; }
-.or-tray:nth-child(5) { animation-delay: 0.2s; }
+.or-tray:nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+.or-tray:nth-child(3) {
+    animation-delay: 0.1s;
+}
+
+.or-tray:nth-child(4) {
+    animation-delay: 0.15s;
+}
+
+.or-tray:nth-child(5) {
+    animation-delay: 0.2s;
+}
 
 .or-tray:hover {
     border-color: var(--c-border2);
@@ -1851,9 +1906,17 @@ body {
     text-align: right;
 }
 
-.or-health-ok .or-relay-latency { color: var(--c-green); }
-.or-health-warn .or-relay-latency { color: var(--c-yellow); }
-.or-health-dead .or-relay-latency { color: var(--c-red); }
+.or-health-ok .or-relay-latency {
+    color: var(--c-green);
+}
+
+.or-health-warn .or-relay-latency {
+    color: var(--c-yellow);
+}
+
+.or-health-dead .or-relay-latency {
+    color: var(--c-red);
+}
 
 /* Mini HP bar per relay: SNES-style stat bar */
 .or-relay-hp {
@@ -2431,10 +2494,22 @@ body {
     gap: 0.5ch;
 }
 
-.dx-group-label.dx-fail { color: var(--c-red); }
-.dx-group-label.dx-warn { color: var(--c-yellow); }
-.dx-group-label.dx-pass { color: var(--c-green); cursor: pointer; }
-.dx-group-label.dx-pass:hover { color: var(--c-white); }
+.dx-group-label.dx-fail {
+    color: var(--c-red);
+}
+
+.dx-group-label.dx-warn {
+    color: var(--c-yellow);
+}
+
+.dx-group-label.dx-pass {
+    color: var(--c-green);
+    cursor: pointer;
+}
+
+.dx-group-label.dx-pass:hover {
+    color: var(--c-white);
+}
 
 .dx-group-count {
     font-size: 0.625ch;
@@ -2480,8 +2555,8 @@ body {
     gap: 0.5ch;
     padding: 0.5ch 0.75ch;
     background: linear-gradient(180deg,
-        rgba(56, 232, 232, 0.15),
-        rgba(56, 232, 232, 0.05));
+            rgba(56, 232, 232, 0.15),
+            rgba(56, 232, 232, 0.05));
     border-bottom: 0.125ch solid var(--c-border);
     font-size: 0.875ch;
 }
@@ -2513,6 +2588,8 @@ body {
 
 .guide-card-body {
     padding: 0.75ch;
+    overflow-y: scroll;
+    max-height: 100%;
 }
 
 .guide-prescription {
@@ -2678,8 +2755,15 @@ body {
 }
 
 @keyframes guide-pulse {
-    0%, 100% { box-shadow: 0 0 0.5ch rgba(56, 232, 232, 0.2); }
-    50% { box-shadow: 0 0 1.5ch rgba(56, 232, 232, 0.4); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 0.5ch rgba(56, 232, 232, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 1.5ch rgba(56, 232, 232, 0.4);
+    }
 }
 
 /* ── Tray highlight for guided mode ── */
@@ -2690,10 +2774,10 @@ body {
     border-color: var(--c-accent, #38e8e8) !important;
 }
 
-.or-tray-highlighted > .or-tray-header {
+.or-tray-highlighted>.or-tray-header {
     background: linear-gradient(180deg,
-        rgba(56, 232, 232, 0.15),
-        rgba(56, 232, 232, 0.05));
+            rgba(56, 232, 232, 0.15),
+            rgba(56, 232, 232, 0.05));
 }
 
 /* ── Relay rows collapse (after chart renders) ── */
