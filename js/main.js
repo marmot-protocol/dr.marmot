@@ -6,7 +6,7 @@ import { setSprite } from './sprite.js';
 import { startAudit, resetAuditState } from './audit.js';
 import { getDisplayName, speak } from './personalities.js';
 import { removeScanBar } from './scan-bar.js';
-import { npubInput, nip07Btn, nextBtn, auditBtn, spritePanel, dialogSpeaker, spriteLabel, relayList } from './dom.js';
+import { npubInput, nip07Btn, nextBtn, auditBtn, cancelBtn, spritePanel, dialogSpeaker, spriteLabel, relayList } from './dom.js';
 import { html } from './html.js';
 
 if (isJeff) document.body.dataset.mode = 'jeff';
@@ -30,15 +30,16 @@ function initSpriteStyle() {
 
 initSpriteStyle();
 
-function updateNip07Visibility() {
-    nip07Btn.classList.toggle('hidden', !window.nostr);
+function updateNip07State() {
+    nip07Btn.disabled = !window.nostr;
+    if (window.nostr) nip07Btn.classList.add('nip07-ready');
 }
 
-updateNip07Visibility();
+updateNip07State();
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(updateNip07Visibility, 500));
+    document.addEventListener('DOMContentLoaded', () => setTimeout(updateNip07State, 500));
 } else {
-    setTimeout(updateNip07Visibility, 500);
+    setTimeout(updateNip07State, 500);
 }
 
 async function signInWithNip07() {
@@ -72,6 +73,7 @@ function resetForNextPatient() {
 nip07Btn.addEventListener('click', () => { getAudio(); signInWithNip07(); });
 auditBtn.addEventListener('click', () => { getAudio(); startAudit(); });
 nextBtn.addEventListener('click', resetForNextPatient);
+cancelBtn.addEventListener('click', () => { getAudio(); resetForNextPatient(); });
 npubInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { getAudio(); startAudit(); }
 });
